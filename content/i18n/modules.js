@@ -9,7 +9,9 @@ T.es = Object.assign(T.es || {}, {
   m5: { title: 'Estados y animación', desc: 'Describe estados de la interfaz con State y PropertyChanges y anímalos con Behavior, Transition y NumberAnimation.' },
   m6: { title: 'Modelos y vistas', desc: 'Separa los datos de la presentación: ListModel, Repeater y ListView con delegados.' },
   m7: { title: 'Quickshell', desc: 'Construye shells de escritorio reales: ShellRoot, PanelWindow, Variants, singletons, Process, SystemClock e IPC.' },
-  m8: { title: 'Proyecto final: Dynamic Island', desc: 'Construye una Dynamic Island desde cero en cinco pasos y supera el examen final.' }
+  m8: { title: 'Proyecto final: Dynamic Island', desc: 'Construye una Dynamic Island desde cero en cinco pasos y supera el examen final.' },
+  j1: { title: 'Fundamentos de JavaScript', desc: 'Variables, cadenas, funciones flecha y ámbito: las partes de JS que usas en cada binding.' },
+  j2: { title: 'Arrays y objetos', desc: 'Objetos, desestructuración, spread, map/filter/find/reduce, ordenación y JSON.' }
 });
 T.de = Object.assign(T.de || {}, {
   m1: { title: 'QML-Grundlagen', desc: 'Was QML ist, wie ein Dokument aufgebaut ist, Objekte, Eigenschaften, ids, Anker und Positionierer.' },
@@ -19,7 +21,9 @@ T.de = Object.assign(T.de || {}, {
   m5: { title: 'Zustände und Animation', desc: 'UI-Zustände mit State und PropertyChanges beschreiben und mit Behavior, Transition und NumberAnimation animieren.' },
   m6: { title: 'Modelle und Ansichten', desc: 'Daten von der Darstellung trennen: ListModel, Repeater und ListView mit Delegates.' },
   m7: { title: 'Quickshell', desc: 'Echte Desktop-Shells bauen: ShellRoot, PanelWindow, Variants, Singletons, Process, SystemClock und IPC.' },
-  m8: { title: 'Abschlussprojekt: Dynamic Island', desc: 'Baue in fünf Schritten eine Dynamic Island von Grund auf und bestehe die Abschlussprüfung.' }
+  m8: { title: 'Abschlussprojekt: Dynamic Island', desc: 'Baue in fünf Schritten eine Dynamic Island von Grund auf und bestehe die Abschlussprüfung.' },
+  j1: { title: 'JavaScript-Grundlagen', desc: 'Variablen, Strings, Arrow-Funktionen und Gültigkeitsbereich: die Teile von JS, die du in jedem Binding brauchst.' },
+  j2: { title: 'Arrays und Objekte', desc: 'Objekte, Destrukturierung, Spread, map/filter/find/reduce, Sortieren und JSON.' }
 });
 T.ja = Object.assign(T.ja || {}, {
   m1: { title: 'QMLの基本', desc: 'QMLとは何か、ドキュメントの構造、オブジェクト、プロパティ、id、アンカー、ポジショナー。' },
@@ -29,6 +33,8 @@ T.ja = Object.assign(T.ja || {}, {
   m5: { title: '状態とアニメーション', desc: 'StateとPropertyChangesでUIの状態を記述し、Behavior、Transition、NumberAnimationでアニメーションさせる。' },
   m6: { title: 'モデルとビュー', desc: 'データと表示を分離する: ListModel、Repeater、デリゲート付きListView。' },
   m7: { title: 'Quickshell', desc: '本物のデスクトップシェルを作る: ShellRoot、PanelWindow、Variants、シングルトン、Process、SystemClock、IPC。' },
-  m8: { title: '最終プロジェクト: Dynamic Island', desc: '5つのステップでDynamic Islandをゼロから作り、最終試験に合格しましょう。' }
+  m8: { title: '最終プロジェクト: Dynamic Island', desc: '5つのステップでDynamic Islandをゼロから作り、最終試験に合格しましょう。' },
+  j1: { title: 'JavaScriptの基本', desc: '変数、文字列、アロー関数、スコープ: すべてのバインディングで使うJSの基本。' },
+  j2: { title: '配列とオブジェクト', desc: 'オブジェクト、分割代入、スプレッド、map/filter/find/reduce、ソート、JSON。' }
 });
 })();
