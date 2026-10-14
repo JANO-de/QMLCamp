@@ -11,7 +11,8 @@ T.es = Object.assign(T.es || {}, {
   m7: { title: 'Quickshell', desc: 'Construye shells de escritorio reales: ShellRoot, PanelWindow, Variants, singletons, Process, SystemClock e IPC.' },
   m8: { title: 'Proyecto final: Dynamic Island', desc: 'Construye una Dynamic Island desde cero en cinco pasos y supera el examen final.' },
   j1: { title: 'Fundamentos de JavaScript', desc: 'Variables, cadenas, funciones flecha y ámbito: las partes de JS que usas en cada binding.' },
-  j2: { title: 'Arrays y objetos', desc: 'Objetos, desestructuración, spread, map/filter/find/reduce, ordenación y JSON.' }
+  j2: { title: 'Arrays y objetos', desc: 'Objetos, desestructuración, spread, map/filter/find/reduce, ordenación y JSON.' },
+  j3: { title: 'JavaScript dentro de QML', desc: 'property var y notificación de cambios, funciones frente a bindings, manejadores, errores.' }
 });
 T.de = Object.assign(T.de || {}, {
   m1: { title: 'QML-Grundlagen', desc: 'Was QML ist, wie ein Dokument aufgebaut ist, Objekte, Eigenschaften, ids, Anker und Positionierer.' },
@@ -23,7 +24,8 @@ T.de = Object.assign(T.de || {}, {
   m7: { title: 'Quickshell', desc: 'Echte Desktop-Shells bauen: ShellRoot, PanelWindow, Variants, Singletons, Process, SystemClock und IPC.' },
   m8: { title: 'Abschlussprojekt: Dynamic Island', desc: 'Baue in fünf Schritten eine Dynamic Island von Grund auf und bestehe die Abschlussprüfung.' },
   j1: { title: 'JavaScript-Grundlagen', desc: 'Variablen, Strings, Arrow-Funktionen und Gültigkeitsbereich: die Teile von JS, die du in jedem Binding brauchst.' },
-  j2: { title: 'Arrays und Objekte', desc: 'Objekte, Destrukturierung, Spread, map/filter/find/reduce, Sortieren und JSON.' }
+  j2: { title: 'Arrays und Objekte', desc: 'Objekte, Destrukturierung, Spread, map/filter/find/reduce, Sortieren und JSON.' },
+  j3: { title: 'JavaScript in QML', desc: 'property var und Änderungsbenachrichtigung, Funktionen vs. Bindings, Handler, Fehler.' }
 });
 T.ja = Object.assign(T.ja || {}, {
   m1: { title: 'QMLの基本', desc: 'QMLとは何か、ドキュメントの構造、オブジェクト、プロパティ、id、アンカー、ポジショナー。' },
@@ -35,6 +37,7 @@ T.ja = Object.assign(T.ja || {}, {
   m7: { title: 'Quickshell', desc: '本物のデスクトップシェルを作る: ShellRoot、PanelWindow、Variants、シングルトン、Process、SystemClock、IPC。' },
   m8: { title: '最終プロジェクト: Dynamic Island', desc: '5つのステップでDynamic Islandをゼロから作り、最終試験に合格しましょう。' },
   j1: { title: 'JavaScriptの基本', desc: '変数、文字列、アロー関数、スコープ: すべてのバインディングで使うJSの基本。' },
-  j2: { title: '配列とオブジェクト', desc: 'オブジェクト、分割代入、スプレッド、map/filter/find/reduce、ソート、JSON。' }
+  j2: { title: '配列とオブジェクト', desc: 'オブジェクト、分割代入、スプレッド、map/filter/find/reduce、ソート、JSON。' },
+  j3: { title: 'QML内のJavaScript', desc: 'property varと変更通知、関数とバインディング、ハンドラ、エラー。' }
 });
 })();
