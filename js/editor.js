@@ -17,7 +17,8 @@ function highlight(src) {
   }
   return out + esc(src.slice(last)) + '\n';
 }
-function createEditor(initial, onChange, onRun) {
+function createEditor(initial, onChange, onRun, hl) {
+  const highlight = hl || G.QmlEditor.highlight;
   const wrap = document.createElement('div'); wrap.className = 'ed';
   const pre = document.createElement('pre'); pre.className = 'ed-hl'; pre.setAttribute('aria-hidden', 'true');
   const ta = document.createElement('textarea'); ta.className = 'ed-ta'; ta.spellcheck = false;

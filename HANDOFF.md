@@ -14,21 +14,22 @@
 - Headless check on NixOS: `chromium --headless`, or Playwright with `playwright-driver.browsers` + `PLAYWRIGHT_BROWSERS_PATH`. `rg` may be missing; use grep.
 
 ## TODO (approved; do in order; mark [x]; ask before changing the list)
-1. [ ] Confirm this copy is the newest; merge anything the other copy has that this one lacks (translations m1 to m8, `js1.js`).
-2. [ ] Rust: rebuild `rust.js` against `rust-lib.js` (lexer, parser, evaluator with ownership/borrow errors, traits, generics, `?`, iterators, closures, collections, `Rc/RefCell`, overflow panics); verify with sample programs. `rust-lib.js` is not in this repo yet; the user must add it.
-3. [ ] Rust course (modules, labs, quizzes) passing `#/verify`; translate welcome/UI strings if new keys were added.
+1. [x] Confirm this copy is the newest; merge anything the other copy has that this one lacks (translations m1 to m8, `js1.js`). Done: this repo is the newest. All other copies found (Trash `qmlcamp(1)`, Trash `qmlcamp-site[.2]`, MyNixOS deploy) are older or byte-identical; the only older one lacks i18n/`js1.js`, so nothing to merge.
+2. [x] Rust: rebuild `rust.js` against `rust-lib.js` (lexer, parser, evaluator with ownership/borrow errors, traits, generics, `?`, iterators, closures, collections, `Rc/RefCell`, overflow panics); verify with sample programs. `rust-lib.js` is not in this repo yet; the user must add it. Done: `rust-lib.js` added; `rust.js` rewritten (~1050 lines) and verified with 90+ sample programs (node + headless Chromium), incl. ownership/borrow errors (E0382/E0499/E0502, NLL approximation), traits, generics, `?`, iterators, closures, HashMap/HashSet, `Rc`/`RefCell`, overflow/div0 panics. Known limit: `String` is a JS primitive so move-of-`String` is not enforced.
+3. [x] Rust course (modules, labs, quizzes) passing `#/verify`; translate welcome/UI strings if new keys were added. Done: `content/rust1.js` added (course id `rust`, `lang:'rust'`, modules r1–r3, 3 labs). `js/app.js` made language-aware (`blockLang`, rust branch in `playground`/`runTests`/`viewLab`/`viewTheory`/`viewVerify`), `js/editor.js` gained an optional highlighter arg, `index.html` loads `js/rust.js`, `js/rust-lib.js`, `content/rust1.js`, `css/style.css` got `.rustout`, `js/i18n.js` got `output`/`errors` keys (en/es/de/ja). `#/verify` now 27/27 (24 QML+JS, 3 Rust). Fixed `rust-lib.js` kit: `out`/`lines` are getters (added an `out()` method first, then the getter overrode it — reverted to getters only).
 4. [ ] Language switcher: finish untranslated block text (es, de, ja), one module per delivery.
 5. [ ] Not requested yet (ask first): more courses, progress export/import.
 
 ## Current state
-- Modules 1 to 8 done, 20 labs passed `#/verify` in the earlier copy. Not re-run on this repo.
-- i18n files m1 to m8 and `modules.js` are present, plus `content/js1.js` (JavaScript course).
-- `tools/harness.html` is missing from the repo.
-- Rust: `rust-lib.js` and `rust.js` are not in the repo.
+- Modules 1 to 8 done, 27 labs (20 QML + 4 JS + 3 Rust) passed `#/verify` on this repo, headless Chromium (Playwright), no page errors.
+- i18n files m1 to m8 and `modules.js` are present, plus `content/js1.js` (JavaScript course) and `content/rust1.js` (Rust course).
+- `tools/harness.html` is missing from the repo (not needed for `#/verify`).
+- Rust: `rust-lib.js`, `rust.js` and `content/rust1.js` are in the repo and wired into `index.html`; the Rust course page, lab run and `#/verify` all work in headless Chromium.
+- `AGENTS.md` added (progress-bar output rule + verification commands).
 
 ## Where the conversation stopped
-Repo pushed with the whole site. Next: run `#/verify` on this copy, then TODO 1.
+TODO 3 done (Rust course passing `#/verify`, 27/27). Next: TODO 4 (finish es/de/ja block text, one module per delivery).
 
 ## Open questions
-- Is `tools/harness.html` needed for `#/verify`?
-- Does the other QMLCamp copy differ from this one?
+- Is `tools/harness.html` needed for `#/verify`? No — verify passes 27/27 without it.
+- Does the other QMLCamp copy differ from this one? Only Trash `qmlcamp(1)` differs, and it is older (no i18n/`js1.js`). All i18n copies are byte-identical to this repo.

@@ -78,6 +78,7 @@ const resumeFor = c => {                 // where "Continue" goes for a course: 
 };
 const cT = c => c.id === 'qml' && I.lang !== 'en' ? Object.assign({}, c, { title: tr('courseTitle'), desc: tr('courseDesc') }) : c;
 const TYPE_LABEL = { get theory() { return tr('theory'); }, get lab() { return tr('lab'); }, get quiz() { return tr('quiz'); }, get review() { return tr('review'); } };
+const blockLang = (b, c) => (b && b.lang) || (c && c.lang) || (course && course.lang) || 'qml';
 
 function updateOverall(welcome) {
   const all = allBlocks(), d = all.filter(b => isDone(b.id)).length, el = document.getElementById('overall');
@@ -198,6 +199,29 @@ function playground(files, opts = {}) {
   const names = Object.keys(files);
   let cur = names[0];
   const state = Object.assign({}, files);
+  const isRust = opts.lang === 'rust' || state['main.rs'] !== undefined;
+  const mainName = state['main.qml'] !== undefined ? 'main.qml' : state['main.rs'] !== undefined ? 'main.rs' : names[0];
+  if (isRust) {
+    const out = h('pre', { class: 'rustout' }), con = h('div', { class: 'con' });
+    const show = () => {
+      const res = window.RustLib.runProgram(state[cur]);
+      out.textContent = res.out || '';
+      con.innerHTML = '';
+      if (res.errOut) con.append(h('div', { class: 'l' }, res.errOut.replace(/\n$/, '')));
+      if (res.error) con.append(h('div', { class: 'e' }, res.error));
+      if (!res.errOut && !res.error) con.append(h('div', { class: 'okm' }, tr('noErrors')));
+    };
+    const run = () => { if (state[cur] === undefined) cur = mainName; show(); };
+    const ed = createEditor(state[cur], v => { state[cur] = v; run(); }, run, window.RustLib && window.RustLib.highlightRust);
+    const tabs = h('div', { class: 'tabs' }, names.map(n => h('button', { class: n === cur ? 'on' : '', onclick: () => {
+      state[cur] = ed.value; cur = n; ed.value = state[n]; ed.focus();
+      tabs.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.textContent === n)); run();
+    } }, n)));
+    run();
+    return { state, out, preview: out, con, run, ed, tabs, isRust: true,
+      current: () => { state[cur] = ed.value; return Object.assign({}, state); },
+      setFiles(f) { for (const k in state) delete state[k]; Object.assign(state, f); const ns = Object.keys(f); cur = ns.includes(mainName) ? mainName : ns[0]; ed.value = state[cur]; run(); } };
+  }
   const preview = h('div', { class: 'pv' }), con = h('div', { class: 'con' });
   const rt = new window.QmlRuntime({ container: preview });
   let timer = 0;
@@ -208,16 +232,15 @@ function playground(files, opts = {}) {
     if (!rt.errors.length && !rt.logs.length) con.append(h('div', { class: 'okm' }, tr('noErrors')));
   };
   rt.onLog = () => show(); rt.onError = () => show();
-  const run = () => { rt.load(state, state['main.qml'] !== undefined ? 'main.qml' : names[0]); rt.start(); show(); };
+  const run = () => { rt.load(state, mainName); rt.start(); show(); };
   const ed = createEditor(state[cur], v => { state[cur] = v; clearTimeout(timer); timer = setTimeout(run, 450); }, run);
-  const tabs = h('div', { class: 'tabs' }, names.map(n => h('button', { class: n === cur ? 'on' : '', onclick: ev => {
-    state[cur] = ed.value; cur = n; ed.value = state[n];
-    tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.textContent === n));
+  const tabs = h('div', { class: 'tabs' }, names.map(n => h('button', { class: n === cur ? 'on' : '', onclick: () => {
+    state[cur] = ed.value; cur = n; ed.value = state[n]; ed.focus();
+    tabs.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.textContent === n)); run();
   } }, n)));
-  const api = { state, rt, preview, con, ed, run, tabs, current: () => { state[cur] = ed.value; return Object.assign({}, state); },
-    setFiles: f => { for (const k of Object.keys(state)) delete state[k]; Object.assign(state, f); cur = Object.keys(f)[0]; ed.value = state[cur]; tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.textContent === cur)); run(); } };
-  setTimeout(run, 0);
-  return api;
+  return { state, preview, con, rt, run, ed, tabs, isRust: false,
+    current: () => { state[cur] = ed.value; return Object.assign({}, state); },
+    setFiles(f) { for (const k in state) delete state[k]; Object.assign(state, f); const ns = Object.keys(f); cur = ns.includes(mainName) ? mainName : ns[0]; ed.value = state[cur]; run(); } };
 }
 
 // ------------------------------------------------------------------ theory
@@ -235,9 +258,16 @@ function viewTheory(m, b, lb) {
     const st = h('span', { class: 'state' + (prog.q[b.id + ':' + i] ? ' ok' : '') }, l.q ? (prog.q[b.id + ':' + i] ? tr('stPassed') : tr('stNot')) : tr('stRead'));
     const sec = h('section', { class: 'lesson' }, st, h('h2', {}, l.title), h('div', { html: l.html }));
     if (l.example) {
-      const pg = playground(typeof l.example === 'string' ? { 'main.qml': l.example } : l.example);
-      cleanups.push(() => pg.rt.dispose());
-      sec.append(h('div', { class: 'ex' }, h('div', { class: 'exh' }, tr('tryIt')), h('div', { class: 'pg' }, pg.ed.el, h('div', { style: 'display:grid;grid-template-rows:2fr 1fr;min-height:0' }, pg.preview, pg.con))));
+      const isRust = blockLang(b) === 'rust';
+      const exFiles = isRust
+        ? { 'main.rs': typeof l.example === 'string' ? l.example : (l.example['main.rs'] || Object.values(l.example)[0]) }
+        : (typeof l.example === 'string' ? { 'main.qml': l.example } : l.example);
+      const pg = playground(exFiles, { lang: isRust ? 'rust' : 'qml' });
+      cleanups.push(() => pg.rt && pg.rt.dispose());
+      const pane = isRust
+        ? h('div', { style: 'display:grid;grid-template-rows:1fr auto;min-height:0' }, pg.out, pg.con)
+        : h('div', { style: 'display:grid;grid-template-rows:2fr 1fr;min-height:0' }, pg.preview, pg.con);
+      sec.append(h('div', { class: 'ex' }, h('div', { class: 'exh' }, tr('tryIt')), h('div', { class: 'pg' }, pg.ed.el, pane)));
     }
     if (l.q) sec.append(question(l.q, b.id + ':' + i, ok => { st.className = 'state' + (ok ? ' ok' : ''); st.textContent = ok ? tr('stPassed') : tr('stNot'); refresh(); }));
     page.append(sec);
@@ -279,6 +309,18 @@ function viewReview(m, b, lb) {
 
 // ------------------------------------------------------------------ test running
 function runTests(lab, files, rt) {
+  const isRust = (lab.lang === 'rust' || (files && files['main.rs'] !== undefined)) && window.RustLib;
+  if (isRust) {
+    const src = files['main.rs'] !== undefined ? files['main.rs'] : files[Object.keys(files)[0]];
+    const results = [];
+    for (const test of lab.tests) {
+      const r = { story: test.story, ok: false, why: '' };
+      try { const t = window.RustLib.makeRustKit(src, Fail); test.run(t); r.ok = true; }
+      catch (e) { r.why = e instanceof Fail ? e.message : 'Test could not run: ' + e.message; }
+      results.push(r);
+    }
+    return results;
+  }
   const results = [];
   const loaded = rt.load(files, 'main.qml');
   for (const test of lab.tests) {
@@ -305,8 +347,9 @@ function runTests(lab, files, rt) {
 function viewLab(m, b, lb) {
   const saved = prog.files[b.id];
   const start = saved || b.files;
-  const pg = playground(JSON.parse(JSON.stringify(start)));
-  cleanups.push(() => pg.rt.dispose());
+  const isRust = blockLang(b) === 'rust';
+  const pg = playground(JSON.parse(JSON.stringify(start)), { lang: isRust ? 'rust' : 'qml' });
+  cleanups.push(() => pg.rt && pg.rt.dispose());
   let saveT = 0;
   pg.ed.el.addEventListener('input', () => { clearTimeout(saveT); saveT = setTimeout(() => { prog.files[b.id] = pg.current(); saveProg(); }, 500); });
   const list = h('div', {});
@@ -320,14 +363,20 @@ function viewLab(m, b, lb) {
   };
   const test = () => {
     const files = pg.current();
-    const tmp = document.createElement('div'); document.body.append(tmp); tmp.style.cssText = 'position:absolute;left:-9999px;top:0';
-    const rt = new window.QmlRuntime({ container: tmp });
-    const res = runTests(b, files, rt); rt.dispose(); tmp.remove();
+    let res;
+    if (isRust) {
+      res = runTests(b, files, null);
+      pg.run();
+    } else {
+      const tmp = document.createElement('div'); document.body.append(tmp); tmp.style.cssText = 'position:absolute;left:-9999px;top:0';
+      const rt = new window.QmlRuntime({ container: tmp });
+      res = runTests(b, files, rt); rt.dispose(); tmp.remove();
+      pg.run();
+    }
     renderStories(res);
     const pass = res.filter(r => r.ok).length;
     if (pass === res.length) { msg.style.color = 'var(--ok)'; msg.textContent = tr('labOk'); markDone(b.id); updateOverall(); nextBtn.style.display = ''; }
     else { msg.style.color = 'var(--bad)'; msg.textContent = tr('labPart', { p: pass, n: res.length }); }
-    pg.run();
   };
   const nextBtn = nextLink(m, b); nextBtn.style.display = isDone(b.id) ? '' : 'none';
   const sol = h('details', { style: 'margin-top:14px;color:var(--dim)' }, h('summary', {}, tr('stuck')),
@@ -339,7 +388,7 @@ function viewLab(m, b, lb) {
     h('div', { class: 'toolbar' }, h('button', { class: 'btn', onclick: test }, tr('runTests')), h('button', { class: 'btn ghost', onclick: () => { if (confirm(tr('resetAsk'))) { delete prog.files[b.id]; saveProg(); pg.setFiles(JSON.parse(JSON.stringify(b.files))); renderStories(null); msg.textContent = ''; } } }, tr('reset'))),
     msg, nextBtn, sol);
   const right = h('div', { class: 'right' }, h('div', { class: 'edwrap' }, pg.tabs, pg.ed.el),
-    h('div', { class: 'lower' }, h('div', { style: 'display:grid;grid-template-rows:auto 1fr;min-height:0' }, h('div', { class: 'pvhead' }, tr('preview')), pg.preview), h('div', { style: 'display:grid;grid-template-rows:auto 1fr;min-height:0' }, h('div', { class: 'conhead' }, tr('console')), pg.con)));
+    h('div', { class: 'lower' }, h('div', { style: 'display:grid;grid-template-rows:auto 1fr;min-height:0' }, h('div', { class: 'pvhead' }, tr(isRust ? 'output' : 'preview')), pg.preview), h('div', { style: 'display:grid;grid-template-rows:auto 1fr;min-height:0' }, h('div', { class: 'conhead' }, tr(isRust ? 'errors' : 'console')), pg.con)));
   $app.append(h('div', { class: 'lab' }, left, right));
   $app.style.maxWidth = '1700px';
 }
@@ -351,8 +400,14 @@ function viewVerify() {
   const tmp = h('div', { style: 'position:absolute;left:-9999px;top:0' }); document.body.append(tmp);
   window.__verify = { rows: [] };
   for (const bl of everyBlock().filter(x => x.type === 'lab')) {
-    const rt = new window.QmlRuntime({ container: tmp });
-    const a = runTests(bl, bl.files, rt), s = runTests(bl, bl.solution, rt); rt.dispose();
+    const isRust = blockLang(bl) === 'rust';
+    let a, s;
+    if (isRust) {
+      a = runTests(bl, bl.files, null); s = runTests(bl, bl.solution, null);
+    } else {
+      const rt = new window.QmlRuntime({ container: tmp });
+      a = runTests(bl, bl.files, rt); s = runTests(bl, bl.solution, rt); rt.dispose();
+    }
     const aOk = a.some(r => !r.ok), sOk = s.every(r => r.ok);
     const bad = s.filter(r => !r.ok).map(r => r.story.replace(/<[^>]+>/g, '') + ' → ' + r.why).join(' | ');
     window.__verify.rows.push({ id: bl.id, starterFails: aOk, solutionPasses: sOk, bad });
