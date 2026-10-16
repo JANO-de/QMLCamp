@@ -1,1 +1,12 @@
-{ "$schema": "https://opencode.ai/config.json", "instructions": ["HANDOFF.md"] }
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["HANDOFF.md"],
+  "permission": {
+    "bash": {
+      "go build*": "allow",
+      "go vet*": "allow",
+      "go test*": "allow",
+      "gofmt*": "allow"
+    }
+  }
+}
