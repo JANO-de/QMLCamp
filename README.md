@@ -22,3 +22,7 @@ Notes:
 - GENLearn has its own creator (`genlearn/index.html#/creator/new`) and multi-course data model. Existing `#/german` continues to work.
 - Works from `file://` and offline. No build step, no CDN.
 
+
+## Planner
+
+`planner/index.html` (third site tab). Blank visual study planner: plans with tags, blocks (days/phases) and task checklists, progress bar, move/flag blocks. Stored in the browser (`localStorage`, key `qmlcamp-planner-v1`); use Export/Import (`qmlcamp-plans.json`) to back up or move plans. No build step, works from `file://`.
