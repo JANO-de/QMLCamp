@@ -114,17 +114,61 @@ function route() {
 }
 window.addEventListener('hashchange', route);
 
-// ------------------------------------------------------------------ home
+// ------------------------------------------------------------------ home (dashboard widgets)
+const PLAN_KEY = 'qmlcamp-planner-v1', HOME_KEY = 'qmlcamp-home-v1';
+const readJson = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+const readPlans = () => { const s = readJson(PLAN_KEY, null); return s && Array.isArray(s.plans) ? s.plans.filter(p => p && typeof p === 'object' && Array.isArray(p.blocks)) : []; };
+const blockDone = b => b.type === 'tasks' ? (b.tasks || []).length > 0 && b.tasks.every(t => t.done) : b.type === 'time' ? b.target > 0 && b.logged >= b.target : false;
+const planStats = p => { let n = 0, d = 0; p.blocks.forEach(b => { if (b.type === 'tasks') (b.tasks || []).forEach(t => { n++; if (t.done) d++; }); }); return { n, d, pct: n ? Math.round(100 * d / n) : 0 }; };
+const widget = (cls, title, ...kids) => h('section', { class: 'widget ' + cls }, h('div', { class: 'whead' }, h('h2', {}, title)), ...kids);
+
+function resumeWidget() {
+  const lastC = C.courses.find(c => c.id === prog.lastCourse) || C.courses[0], r = resumeFor(lastC);
+  return widget('w-resume', r.started ? tr('leftOff') : tr('start').replace(/:\s*$/, ''), h('div', { class: 'dim' }, cT(lastC).title), h('p', { class: 'wbig' }, r.label), h('a', { class: 'btn', href: r.href }, r.started ? tr('contBtn') : tr('startBtn')));
+}
+function progressWidget() {
+  const all = everyBlock(), d = all.filter(b => isDone(b.id)).length, pct = all.length ? Math.round(100 * d / all.length) : 0;
+  return widget('w-prog', tr('wProg'),
+    h('div', { class: 'ringrow' }, h('div', { class: 'ring', style: '--p:' + pct }, h('b', {}, pct + '%')), h('div', {}, h('p', { class: 'wbig' }, tr('wProgAll', { d, n: all.length })),
+      ...C.courses.map(c => { const a = allBlocks(c), x = a.filter(b => isDone(b.id)).length; return h('div', { class: 'mini' }, h('span', {}, cT(c).title), h('div', { class: 'bar' }, h('i', { style: 'width:' + (a.length ? 100 * x / a.length : 0) + '%' }))); }))));
+}
+function langWidget() {
+  const g = readJson('genlearn.v1', {}), now = new Date(), key = d => d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  const streak = g.last === key(now) || g.last === key(new Date(now - 864e5)) ? (g.streak || 0) : 0;
+  return widget('w-lang', tr('wLang'), h('div', { class: 'wstats' },
+    h('div', {}, h('b', {}, streak), h('span', {}, tr('wStreak'))), h('div', {}, h('b', {}, g.xp || 0), h('span', {}, 'XP')), h('div', {}, h('b', {}, Object.keys(g.done || {}).length), h('span', {}, tr('wLessons')))),
+    h('a', { class: 'btn sm ghost', href: 'genlearn/index.html' }, tr('wLangOpen')));
+}
+function planWidget() {
+  const box = widget('w-plan w-wide', tr('wPlan')), plans = readPlans();
+  if (!plans.length) { box.append(h('p', { class: 'dim' }, tr('wPlanNone')), h('a', { class: 'btn sm', href: 'planner/index.html' }, tr('wPlanOpen'))); return box; }
+  const saved = readJson(HOME_KEY, {}), draw = id => {
+    const p = plans.find(x => x.id === id) || plans[0], st = planStats(p), open = p.blocks.find(b => b.type === 'tasks' && (b.tasks || []).some(t => !t.done));
+    const dates = p.blocks.filter(b => (b.exam || b.type === 'milestone') && !blockDone(b)).slice(0, 4), shown = p.blocks.slice(0, 8);
+    const body = h('div', { class: 'planbody' },
+      h('div', { class: 'planmain' },
+        h('h3', {}, h('a', { href: 'planner/index.html#plan=' + encodeURIComponent(p.id) }, p.title || '')),
+        h('div', { class: 'prog' }, h('b', {}, st.pct + ' %'), h('div', { class: 'bar' }, h('i', { style: 'width:' + st.pct + '%' })), h('span', {}, tr('wTasksOf', { d: st.d, n: st.n }))),
+        open ? h('div', {}, h('div', { class: 'sub' }, tr('wNext')), h('p', { class: 'wbig' }, (open.label ? open.label + ': ' : '') + (open.title || '')), h('ul', { class: 'wlist' }, open.tasks.filter(t => !t.done).slice(0, 3).map(t => h('li', {}, t.text)))) : h('p', { class: 'dim' }, tr('wAllTicked')),
+        dates.length ? h('div', {}, h('div', { class: 'sub' }, tr('wDates')), h('ul', { class: 'wlist flags' }, dates.map(b => h('li', {}, (b.label ? b.label + ': ' : '') + (b.title || b.text || '')))) ) : null),
+      h('div', { class: 'plantl' }, h('div', { class: 'sub' }, tr('wTimeline')), h('ol', { class: 'tl' }, shown.map(b => h('li', { class: blockDone(b) ? 'ok' : '' }, h('i', {}), h('span', {}, (b.label ? b.label + ' ' : '') + (b.title || '')))), p.blocks.length > shown.length ? h('li', { class: 'more' }, tr('wMore', { n: p.blocks.length - shown.length })) : null)),
+      h('a', { class: 'btn sm', href: 'planner/index.html#plan=' + encodeURIComponent(p.id) }, tr('wPlanOpen')));
+    return [p, body];
+  };
+  const sel = h('select', { class: 'lang', 'aria-label': tr('wPlanPick') }, plans.map(p => h('option', { value: p.id }, p.title || '')));
+  const first = plans.find(p => p.id === saved.planId) || plans[0]; sel.value = first.id;
+  let [, body] = draw(first.id);
+  sel.addEventListener('change', () => { try { localStorage.setItem(HOME_KEY, JSON.stringify(Object.assign(readJson(HOME_KEY, {}), { planId: sel.value }))); } catch (e) {} const [, nb] = draw(sel.value); body.replaceWith(nb); body = nb; });
+  box.querySelector('.whead').append(sel); box.append(body);
+  return box;
+}
+
 function viewWelcome() {
-  const lastC = C.courses.find(c => c.id === prog.lastCourse) || null, hero = lastC ? resumeFor(lastC) : null;
   $app.append(h('div', { class: 'page', style: 'max-width:1100px' },
     h('h1', {}, tr('welcome')),
     h('p', {}, tr('welcomeP')),
-    hero && hero.started ? h('div', { class: 'card', style: 'margin:18px 0;border-color:var(--ok,#4cd964)' },
-      h('div', { class: 'dim', style: 'color:var(--dim);font-size:13px' }, cT(lastC).title),
-      h('h3', {}, tr('leftOff')), h('p', {}, hero.label),
-      h('a', { class: 'btn', href: hero.href }, tr('cont') + hero.label)) : null,
-    h('div', { class: 'toolbar', style: 'justify-content:space-between;align-items:center' },
+    h('div', { class: 'dash' }, resumeWidget(), progressWidget(), langWidget(), planWidget()),
+    h('div', { class: 'toolbar', style: 'justify-content:space-between;align-items:center;margin-top:28px' },
       h('h2', { style: 'margin:0' }, C.courses.length > 1 ? tr('courses') : tr('course')),
       h('a', { class: 'btn', href: '#/creator' }, tr('newCourse'))),
     h('div', { class: 'mods' }, C.courses.map(c => {
@@ -138,6 +182,7 @@ function viewWelcome() {
     ioBar(),
     h('p', { style: 'margin-top:26px;color:var(--dim);font-size:13px' }, tr('saved'), h('a', { href: '#/verify' }, tr('selfCheck')), '')));
 }
+
 function viewCourse(id) {
   const all = allBlocks(), d = all.filter(b => isDone(b.id)).length, r = resumeFor(course);
   $app.append(h('div', { class: 'page', style: 'max-width:1100px' },

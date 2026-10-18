@@ -1,0 +1,35 @@
+/* Built-in plan templates. `seed: true` = added automatically the first time the Planner opens. */
+window.PLANNER_TEMPLATES = [{
+  id: "bbdd-er", seed: true, name: "Bases de datos: diagramas E/R (18–28 oct)",
+  plan: {
+    title: "Bases de datos: diagramas E/R (18–28 oct)",
+    tags: [
+      { id: "bin", name: "binarias / N:M", color: "sky" }, { id: "ter", name: "ternarias", color: "sage" },
+      { id: "jer", name: "jerarquías", color: "lav" }, { id: "deb", name: "entidad débil", color: "butter" },
+      { id: "agr", name: "agregación", color: "rose" }, { id: "ref", name: "reflexiva", color: "peach" }
+    ],
+    blocks: [
+      { type: "note", label: "reglas", title: "Reglas clave", tags: ["agr", "jer", "ter"],
+        text: "Agregación: ¿existe A–B sin C? Si sí, agregación. Si las tres entidades son inseparables, ternaria.\nJerarquías: total o parcial (¿todo supertipo es de algún subtipo?) y exclusiva o solapada (¿puede ser de dos subtipos a la vez?).\nPaso a tablas de una jerarquía: una tabla por supertipo y otra por subtipo; en el subtipo la PK es también FK al supertipo.\nTernaria: la cardinalidad se lee fijando dos entidades y mirando la tercera." },
+      { type: "tasks", label: "18–19", title: "Base: apuntes y binarias", tags: ["bin", "ter"],
+        tasks: ["Repasar apuntes: entidades y atributos", "Repasar apuntes: cardinalidades y participación", "Repasar apuntes: ternarias", "Actividades 1–3", "Actividades 4–6"] },
+      { type: "tasks", label: "20–21", title: "Actividades 7–12", tags: ["bin", "jer", "deb"],
+        tasks: ["Actividades 7 y 7 bis (jerarquía)", "Actividades 8 y 9 (atributos en relación)", "Actividad 10 (entidad débil: hijos)", "Actividades 11 (jerarquía) y 12"] },
+      { type: "tasks", label: "22", title: "Actividades 13–18", tags: ["ter", "bin"],
+        tasks: ["Actividades 13–15", "Actividades 16–17", "Actividad 18 (enunciado largo)"] },
+      { type: "tasks", label: "23", title: "Exámenes I", tags: ["ref", "jer"],
+        tasks: ["Habitantes y municipios", "Cursos de formación (reflexiva con atributo)", "Energía eléctrica (jerarquía)"] },
+      { type: "tasks", label: "24", title: "Club de Ajedrez", tags: ["ter", "deb"],
+        tasks: ["Entidades, jerarquía jugadores/árbitros y restricciones", "Ternarias: hoteles, fechas y partidas", "Entidad débil: movimientos"] },
+      { type: "tasks", label: "25", title: "Agregación", tags: ["agr"],
+        tasks: ["Plataforma de Arte", "Gestión de Proyectos y Departamentos (agregación)", "TecnoMarket"] },
+      { type: "tasks", label: "26", title: "Jerarquías total / exclusiva", tags: ["jer"],
+        tasks: ["Asociación mundial", "Plataforma Educativa", "LogiTrans"] },
+      { type: "tasks", label: "27", title: "Simulacro", tags: [],
+        tasks: ["ArtViva (con reloj)", "CineTec (con reloj)", "Corregir y anotar fallos"] },
+      { type: "time", label: "27", title: "Tiempo de simulacro", target: 120, logged: 0 },
+      { type: "list", label: "fallos", title: "Fallos a repasar", items: [] },
+      { type: "milestone", label: "28 oct", title: "Examen", text: "Solo repaso de la lista de fallos.", exam: true }
+    ]
+  }
+}];

@@ -23,6 +23,7 @@ en: {
   labOk: 'Congratulations, your code passes. Lab complete!', labPart: '{p} of {n} tests pass. Keep going.',
   courseTitle: 'QML Foundations', courseDesc: 'Learn the whole QML language and build a Quickshell Dynamic Island.',
   expBtn: 'Export progress', impBtn: 'Import progress', expDone: 'Progress exported.', impOk: 'Imported: {n} blocks complete. Merged with this browser.', impBad: 'Not a valid QMLCamp progress file.',
+  wProg: 'Progress', wProgAll: '{d} of {n} blocks, all courses', wPlan: 'Study plan', wPlanPick: 'Choose plan', wPlanOpen: 'Open in Planner', wPlanNone: 'No plans yet. Open the Planner to create one or add a template.', wNext: 'Up next', wDates: 'Key dates', wTimeline: 'Timeline', wMore: '+{n} more', wTasksOf: '{d} of {n} tasks', wAllTicked: 'Every task is ticked off.', wLang: 'GENLearn', wStreak: 'day streak', wLessons: 'lessons done', wLangOpen: 'Open GENLearn',
 },
 es: {
   tag: 'aprende construyendo, sin conexión', overall: '{c}: {d} de {n} bloques completados', module: 'Módulo', language: 'Idioma',
@@ -42,6 +43,7 @@ es: {
   labOk: '¡Enhorabuena, tu código pasa! Laboratorio completado.', labPart: 'Pasan {p} de {n} tests. ¡Sigue así!',
   courseTitle: 'Fundamentos de QML', courseDesc: 'Aprende todo el lenguaje QML y construye una Dynamic Island de Quickshell.',
   expBtn: 'Exportar progreso', impBtn: 'Importar progreso', expDone: 'Progreso exportado.', impOk: 'Importado: {n} bloques completados. Combinado con este navegador.', impBad: 'No es un archivo de progreso de QMLCamp válido.',
+  wProg: 'Progreso', wProgAll: '{d} de {n} bloques, todos los cursos', wPlan: 'Plan de estudio', wPlanPick: 'Elegir plan', wPlanOpen: 'Abrir en Planner', wPlanNone: 'Aún no hay planes. Abre el Planner para crear uno o añadir una plantilla.', wNext: 'Lo siguiente', wDates: 'Fechas clave', wTimeline: 'Cronología', wMore: '+{n} más', wTasksOf: '{d} de {n} tareas', wAllTicked: 'Todas las tareas están marcadas.', wLang: 'GENLearn', wStreak: 'días seguidos', wLessons: 'lecciones hechas', wLangOpen: 'Abrir GENLearn',
 },
 de: {
   tag: 'durch Bauen lernen, offline', overall: '{c}: {d} von {n} Blöcken abgeschlossen', module: 'Modul', language: 'Sprache',
@@ -61,6 +63,7 @@ de: {
   labOk: 'Glückwunsch, dein Code besteht! Labor abgeschlossen.', labPart: '{p} von {n} Tests bestanden. Weiter so!',
   courseTitle: 'QML-Grundlagen', courseDesc: 'Lerne die ganze Sprache QML und baue eine Quickshell Dynamic Island.',
   expBtn: 'Fortschritt exportieren', impBtn: 'Fortschritt importieren', expDone: 'Fortschritt exportiert.', impOk: 'Importiert: {n} Blöcke abgeschlossen. Mit diesem Browser zusammengeführt.', impBad: 'Keine gültige QMLCamp-Fortschrittsdatei.',
+  wProg: 'Fortschritt', wProgAll: '{d} von {n} Blöcken, alle Kurse', wPlan: 'Lernplan', wPlanPick: 'Plan wählen', wPlanOpen: 'Im Planner öffnen', wPlanNone: 'Noch keine Pläne. Öffne den Planner, um einen zu erstellen oder eine Vorlage zu nutzen.', wNext: 'Als Nächstes', wDates: 'Wichtige Termine', wTimeline: 'Zeitleiste', wMore: '+{n} weitere', wTasksOf: '{d} von {n} Aufgaben', wAllTicked: 'Alle Aufgaben sind abgehakt.', wLang: 'GENLearn', wStreak: 'Tage in Folge', wLessons: 'Lektionen erledigt', wLangOpen: 'GENLearn öffnen',
 },
 ja: {
   tag: '作って学ぶ・オフライン対応', overall: '{c}: {n}ブロック中{d}ブロック完了', module: 'モジュール', language: '言語',
@@ -80,6 +83,7 @@ ja: {
   labOk: 'おめでとうございます、コードが合格しました！ラボ完了。', labPart: '{n}件中{p}件のテストに合格。その調子！',
   courseTitle: 'QML基礎', courseDesc: 'QML言語のすべてを学び、Quickshell Dynamic Islandを作ります。',
   expBtn: '進捗をエクスポート', impBtn: '進捗をインポート', expDone: '進捗をエクスポートしました。', impOk: 'インポート完了: {n} ブロック完了。このブラウザの進捗と統合しました。', impBad: '有効な QMLCamp の進捗ファイルではありません。',
+  wProg: '進捗', wProgAll: '全コース {d} / {n} ブロック', wPlan: '学習プラン', wPlanPick: 'プランを選択', wPlanOpen: 'Planner で開く', wPlanNone: 'プランはまだありません。Planner で作成するかテンプレートを追加してください。', wNext: '次にやること', wDates: '重要な日程', wTimeline: 'タイムライン', wMore: '他 {n} 件', wTasksOf: '{d} / {n} タスク', wAllTicked: 'すべてのタスクが完了しました。', wLang: 'GENLearn', wStreak: '日連続', wLessons: '完了したレッスン', wLangOpen: 'GENLearn を開く',
 }
 };
 const KEY = 'qmlcamp.lang';

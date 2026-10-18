@@ -3,17 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light dark">
 <title>QMLCamp: learn QML</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/creator.css">
 </head>
 <body>
 <style>
-  .site-tabs { display: flex; flex-wrap: wrap; overflow-x: auto; gap: 4px; padding: 8px 16px 0; background: #14111d; border-bottom: 1px solid #40375a; font: 600 16px/1.5 system-ui, sans-serif; }
-  .site-tabs a { padding: 8px 18px; border-radius: 10px 10px 0 0; color: #a89fbf; text-decoration: none; }
-  .site-tabs a:hover { color: #eee8f6; }
-  .site-tabs a.on { background: #0a0a23; color: #f4dca3; box-shadow: inset 0 3px 0 #f4dca3; }
+  .site-tabs { display: flex; flex-wrap: wrap; overflow-x: auto; gap: 4px; padding: 8px 16px 0; background: var(--bg2); border-bottom: 2px solid var(--edge); font: 700 16px/1.5 var(--sans); }
+  .site-tabs a { padding: 8px 18px; border-radius: 6px 6px 0 0; color: var(--dim); text-decoration: none; }
+  .site-tabs a:hover { color: var(--fg); }
+  .site-tabs a.on { background: var(--bg); color: var(--fg); box-shadow: inset 0 3px 0 var(--accent); }
 </style>
 <nav class="site-tabs" aria-label="Sites">
   <a href="index.html" class="on" aria-current="page">QMLCamp</a>

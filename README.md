@@ -25,4 +25,14 @@ Notes:
 
 ## Planner
 
-`planner/index.html` (third site tab). Blank visual study planner: plans with tags, blocks (days/phases) and task checklists, progress bar, move/flag blocks. Stored in the browser (`localStorage`, key `qmlcamp-planner-v1`); use Export/Import (`qmlcamp-plans.json`) to back up or move plans. No build step, works from `file://`.
+`planner/index.html` (third site tab). Visual study planner: plans with tags and a timeline of blocks. Block types: Tasks (checklist, drives the progress bar), Note, Links (http/https only), List, Time (logged vs target minutes) and Milestone. Any block can be flagged as a key date.
+
+- Templates menu / first run: `planner/templates.js` (`window.PLANNER_TEMPLATES`). Entries with `seed: true` are added the first time the Planner opens.
+- Export: this plan or all plans as `.json`, or one plan as Markdown. Import: `.json` (single plan, `{plans:[...]}` or an array); imported plans are sanitised and never overwrite existing ones.
+- Stored in the browser (`localStorage`, key `qmlcamp-planner-v1`). No build step, works from `file://`. QMLCamp and Planner use the Bricolage Grotesque font from Google Fonts when online and fall back to system fonts offline.
+
+## Planner modes and home widgets
+
+- The Planner always opens a plan in **reading mode** (plain text, no fields). Only task checkboxes and the time +/− buttons stay live so you can track progress. Press **Edit plan** to change titles, tags and blocks; **Done editing** goes back. Switching plans, reloading and importing all return to reading mode; a brand-new blank plan opens in edit mode. `planner/index.html#plan=<id>` opens a specific plan.
+- The QMLCamp welcome page shows widgets: where you left off, overall progress, GENLearn stats and a **study plan viewer**. The plan selector in that widget picks which Planner plan is shown; the choice is stored in `qmlcamp-home-v1`.
+- GENLearn uses a paper-notebook look (`genlearn/genlearn.css`), with light and dark (night desk) variants that follow the system setting.
