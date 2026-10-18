@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
 <title>QMLCamp: learn QML</title>
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/creator.css">
 </head>
 <body>
 <style>
-  .site-tabs { display: flex; gap: 4px; padding: 8px 16px 0; background: #14111d; border-bottom: 1px solid #40375a; font: 600 16px/1.5 system-ui, sans-serif; }
+  .site-tabs { display: flex; flex-wrap: wrap; overflow-x: auto; gap: 4px; padding: 8px 16px 0; background: #14111d; border-bottom: 1px solid #40375a; font: 600 16px/1.5 system-ui, sans-serif; }
   .site-tabs a { padding: 8px 18px; border-radius: 10px 10px 0 0; color: #a89fbf; text-decoration: none; }
   .site-tabs a:hover { color: #eee8f6; }
   .site-tabs a.on { background: #0a0a23; color: #f4dca3; box-shadow: inset 0 3px 0 #f4dca3; }
@@ -21,6 +22,7 @@
 </nav>
 <header class="top"><a class="brand" href="#/">QML<b>Camp</b></a><span class="tag" id="tagline">learn by building, offline</span><span class="sp"></span><select id="lang" class="lang" aria-label="Language"></select><span id="overall" class="pill"></span></header>
 <main id="app"></main>
+<script>(function(){var n=document.querySelector(".site-tabs");function f(){document.documentElement.style.setProperty("--tabs-h",n.offsetHeight+"px")}f();addEventListener("resize",f)})()</script>
 <script src="js/i18n.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/runtime.js"></script>
