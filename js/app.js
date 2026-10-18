@@ -18,7 +18,8 @@ try { prog = Object.assign(prog, JSON.parse(localStorage.getItem(KEY) || '{}'));
 const saveProg = () => { try { localStorage.setItem(KEY, JSON.stringify(prog)); } catch (e) {} };
 const doneCount = () => Object.keys(prog.done || {}).length;
 const exportProg = () => {
-  const blob = new Blob([JSON.stringify({ app: 'qmlcamp', v: 1, at: new Date().toISOString(), prog }, null, 1)], { type: 'application/json' });
+  const courses = window.ForgeCustom ? window.ForgeCustom.exportStored() : [];
+  const blob = new Blob([JSON.stringify({ app: 'qmlcamp', v: 1, at: new Date().toISOString(), prog, courses }, null, 1)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'qmlcamp-progress.json';
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   note(tr('expDone'));
@@ -31,6 +32,7 @@ const importProg = file => {
       if (!p || typeof p !== 'object') throw 0;
       for (const k of ['done', 'files', 'q', 'last']) if (p[k] && typeof p[k] === 'object') prog[k] = Object.assign({}, prog[k], p[k]);
       if (typeof p.lastCourse === 'string') prog.lastCourse = p.lastCourse;
+      if (window.ForgeCustom && Array.isArray(d.courses)) window.ForgeCustom.importStored(d.courses);
       saveProg(); route(); note(tr('impOk', { n: doneCount() }));
     } catch (e) { note(tr('impBad')); }
   };
@@ -59,6 +61,7 @@ const h = (tag, attrs, ...kids) => {
 // courses: other languages can push their own { id, title, desc, modules, upcoming } into QMLCAMP.courses
 C.courses = C.courses || [];
 if (!C.courses.some(c => c.id === 'qml')) C.courses.unshift({ id: 'qml', title: 'QML Foundations', desc: 'Learn the whole QML language and build a Quickshell Dynamic Island.', modules: C.modules, upcoming: C.upcoming || [] });
+if (window.ForgeCustom) { window.ForgeCustom.onRefresh = () => route(); window.ForgeCustom.install(); }
 let course = C.courses[0];
 const allBlocks = (c) => (c || course).modules.flatMap(m => m.blocks);
 const everyBlock = () => C.courses.flatMap(c => allBlocks(c));
@@ -100,12 +103,13 @@ function route() {
   if ((kind === 'm' && moduleById(id)[0]) || (kind === 'b' && blockById(id)[1])) {   // remember the last visited page of this course
     prog.last = prog.last || {}; prog.last[course.id] = '#/' + hash; prog.lastCourse = course.id; saveProg();
   }
-  const welcome = !(kind === 'c' || kind === 'm' || kind === 'b' || kind === 'verify');
+  const welcome = !(kind === 'c' || kind === 'm' || kind === 'b' || kind === 'verify' || kind === 'creator');
   updateOverall(welcome);
   if (kind === 'c') return viewCourse(id);
   if (kind === 'm') return viewModule(id);
   if (kind === 'b') return viewBlock(id);
   if (kind === 'verify') return viewVerify();
+  if (kind === 'creator' && window.ForgeCreator) return window.ForgeCreator.view(hash);
   viewWelcome();
 }
 window.addEventListener('hashchange', route);
@@ -120,14 +124,17 @@ function viewWelcome() {
       h('div', { class: 'dim', style: 'color:var(--dim);font-size:13px' }, cT(lastC).title),
       h('h3', {}, tr('leftOff')), h('p', {}, hero.label),
       h('a', { class: 'btn', href: hero.href }, tr('cont') + hero.label)) : null,
-    h('h2', {}, C.courses.length > 1 ? tr('courses') : tr('course')),
+    h('div', { class: 'toolbar', style: 'justify-content:space-between;align-items:center' },
+      h('h2', { style: 'margin:0' }, C.courses.length > 1 ? tr('courses') : tr('course')),
+      h('a', { class: 'btn', href: '#/creator' }, tr('newCourse'))),
     h('div', { class: 'mods' }, C.courses.map(c => {
       const all = allBlocks(c), d = all.filter(b => isDone(b.id)).length, r = resumeFor(c);
-      return h('div', { class: 'card' }, h('h3', {}, cT(c).title), h('p', {}, cT(c).desc),
+      return h('div', { class: 'card' + (c.custom ? ' custom' : '') }, h('h3', {}, cT(c).title, ...(window.ForgeCustom ? ForgeCustom.badges(c) : [])), h('p', {}, cT(c).desc),
         h('div', { class: 'bar' }, h('i', { style: 'width:' + (all.length ? 100 * d / all.length : 0) + '%' })),
         h('div', { style: 'font-size:13px;color:var(--dim);margin-bottom:10px' }, tr('modsDone', { m: c.modules.length, d, n: all.length })),
-        h('div', { class: 'toolbar' }, h('a', { class: 'btn sm', href: r.href }, (r.started ? tr('cont') : tr('start')) + r.label), h('a', { class: 'btn sm ghost', href: '#/c/' + c.id }, tr('allModules'))));
+        h('div', { class: 'toolbar' }, h('a', { class: 'btn sm', href: r.href }, (r.started ? tr('cont') : tr('start')) + r.label), h('a', { class: 'btn sm ghost', href: '#/c/' + c.id }, tr('allModules')), ...(window.ForgeCustom ? ForgeCustom.cardActions(c) : [])));
     })),
+    window.ForgeCustom ? ForgeCustom.errorCard() : null,
     ioBar(),
     h('p', { style: 'margin-top:26px;color:var(--dim);font-size:13px' }, tr('saved'), h('a', { href: '#/verify' }, tr('selfCheck')), '')));
 }
@@ -135,8 +142,8 @@ function viewCourse(id) {
   const all = allBlocks(), d = all.filter(b => isDone(b.id)).length, r = resumeFor(course);
   $app.append(h('div', { class: 'page', style: 'max-width:1100px' },
     h('div', { class: 'crumbs' }, h('a', { href: '#/' }, tr('welcomeCrumb')), ' / ', cT(course).title),
-    h('h1', {}, cT(course).title),
-    h('div', { class: 'toolbar' }, h('a', { class: 'btn', href: r.href }, (r.started ? tr('cont') : tr('start')) + r.label)),
+    h('h1', {}, cT(course).title, ...(window.ForgeCustom ? ForgeCustom.badges(course) : [])),
+    h('div', { class: 'toolbar' }, h('a', { class: 'btn', href: r.href }, (r.started ? tr('cont') : tr('start')) + r.label), ...(course.custom && window.ForgeCustom ? ForgeCustom.cardActions(course) : [])),
     h('p', { html: course.intro || tr('courseIntro') }),
     h('div', { class: 'bar' }, h('i', { style: 'width:' + (100 * d / all.length) + '%' })),
     h('div', { class: 'mods' },
@@ -315,7 +322,7 @@ function runTests(lab, files, rt) {
     const results = [];
     for (const test of lab.tests) {
       const r = { story: test.story, ok: false, why: '' };
-      try { const t = window.RustLib.makeRustKit(src, Fail); test.run(t); r.ok = true; }
+      try { const t = window.RustLib.makeRustKit(src, Fail); (test.run || window.QmlTestKit.stepsToRun(test.steps))(t); r.ok = true; }
       catch (e) { r.why = e instanceof Fail ? e.message : 'Test could not run: ' + e.message; }
       results.push(r);
     }
@@ -330,7 +337,7 @@ function runTests(lab, files, rt) {
         const e = rt.errors[0]; r.why = 'QML error: ' + (e.file ? e.file + ':' : '') + (e.line ? e.line + ': ' : '') + e.message;
       } else {
         const t = makeKit(rt, files);
-        test.run(t);
+        (test.run || window.QmlTestKit.stepsToRun(test.steps))(t);
         r.ok = true;
       }
     } catch (e) {
@@ -422,5 +429,7 @@ sel.append(...I.LANGS.map(([k, n]) => h('option', { value: k }, n)));
 function chrome() { sel.value = I.lang; sel.title = tr('language'); document.getElementById('tagline').textContent = tr('tag'); }
 sel.addEventListener('change', () => { I.set(sel.value); chrome(); route(); });
 chrome();
-route();
+window.QMLCampCore = { runTests, h, blockLang, esc, allBlocks, everyBlock, cT, TYPE_LABEL };
+if (window.ForgeCustom) ForgeCustom.boot(route);
+else route();
 })();

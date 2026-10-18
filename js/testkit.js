@@ -65,5 +65,31 @@ function makeKit(rt, files) {
   };
   return t;
 }
-G.QmlTestKit = { makeKit, Fail };
+
+// Compile a data-only test (an array of steps) into the run(t) function labs expect.
+// Nothing here is eval'd: each op maps to a fixed kit call, so an exported course file
+// stays pure data. Ops for QML/JS: noErrors, has, count, eq, near, rgbBelow, uses,
+// declares, sourceHas, click, advance. For Rust: noErrors, sourceHas, outHas.
+function stepsToRun(steps) {
+  return function (t) {
+    for (const s of steps || []) {
+      switch (s && s.op) {
+        case 'noErrors': t.noErrors(); break;
+        case 'has': t.expect(t.has(s.id), 'There is no item with id "' + s.id + '"'); break;
+        case 'count': { const n = t.count(s.type); t.eq(n, s.n, 'Found ' + n + ' nodes of type ' + s.type + ' (expected ' + s.n + ')'); break; }
+        case 'eq': t.eq(t.find(s.id)[s.prop], s.value, s.id + '.' + s.prop); break;
+        case 'near': t.near(t.find(s.id)[s.prop], s.value, s.id + '.' + s.prop, s.tol); break;
+        case 'rgbBelow': { const c = t.rgb(t.find(s.id)[s.prop || 'color']); t.expect(c.every(v => v < s.max), s.id + ' colour is not dark enough'); break; }
+        case 'uses': t.expect(t.uses(s.type), 'The file does not use a ' + s.type); break;
+        case 'declares': t.expect(t.declares(null, s.name), 'The root object does not declare ' + s.name); break;
+        case 'sourceHas': t.expect(t.source(s.file).includes(s.text), 'The source is missing: ' + s.text); break;
+        case 'outHas': t.expect(String(t.out).includes(s.text), 'The output is missing: ' + s.text); break;
+        case 'click': t.click(s.id, s.px, s.py); break;
+        case 'advance': t.advance(s.ms); break;
+        default: t.fail('Unknown test step: ' + JSON.stringify(s));
+      }
+    }
+  };
+}
+G.QmlTestKit = { makeKit, Fail, stepsToRun };
 })(window);
