@@ -7,22 +7,31 @@
 
   // lowercase, strip punctuation, fold umlauts so "ae" == "ä" (but "a" != "ä")
   function norm(s) {
-    return String(s).toLowerCase()
+    return String(s)
+      .toLowerCase()
       .replace(/[’‘`´]/g, "'")
-      .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
-      .replace(/[.,!?;:"“”„]/g, '').replace(/\s+/g, ' ').trim();
+      .replace(/ä/g, 'ae')
+      .replace(/ö/g, 'oe')
+      .replace(/ü/g, 'ue')
+      .replace(/ß/g, 'ss')
+      .replace(/[.,!?;:"“”„]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
   GL.norm = norm;
 
   function tokens(sentence) {
-    return sentence.replace(/[.,!?]+$/g, '').split(/\s+/).filter(Boolean);
+    return sentence
+      .replace(/[.,!?]+$/g, '')
+      .split(/\s+/)
+      .filter(Boolean);
   }
   GL.tokens = tokens;
 
   function mulberry(seed) {
     let a = seed >>> 0;
     return function () {
-      a = (a + 0x6D2B79F5) >>> 0;
+      a = (a + 0x6d2b79f5) >>> 0;
       let t = a;
       t = Math.imul(t ^ (t >>> 15), t | 1);
       t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
@@ -33,10 +42,15 @@
 
   function shuffle(a, rnd) {
     const r = a.slice();
-    for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; }
+    for (let i = r.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [r[i], r[j]] = [r[j], r[i]];
+    }
     return r;
   }
-  function pick(a, n, rnd) { return shuffle(a, rnd).slice(0, n); }
+  function pick(a, n, rnd) {
+    return shuffle(a, rnd).slice(0, n);
+  }
 
   function allWords(course) {
     const out = [];
@@ -45,7 +59,8 @@
   }
   function allSentences(course) {
     const out = [];
-    for (const u of course.units) for (const l of u.lessons) for (const s of l.sentences) out.push(s);
+    for (const u of course.units)
+      for (const l of u.lessons) for (const s of l.sentences) out.push(s);
     return out;
   }
 
@@ -57,7 +72,10 @@
       for (const w of shuffle(pool, rnd)) {
         if (out.length >= n) return;
         const v = w[key];
-        if (!seen.has(v)) { seen.add(v); out.push(v); }
+        if (!seen.has(v)) {
+          seen.add(v);
+          out.push(v);
+        }
       }
     };
     take(lesson.words);
@@ -73,31 +91,55 @@
     const sents = lesson.sentences;
     const ex = [];
     let id = 0;
-    const add = (e) => { e.id = ++id; ex.push(e); };
+    const add = (e) => {
+      e.id = ++id;
+      ex.push(e);
+    };
 
     const first = pick(words, Math.min(3, words.length), rnd);
     for (const w of first) {
-      add({ type: 'mc', dir: 'de-en', prompt: w[0], speak: w[0], answer: w[1],
-        options: shuffle([w[1]].concat(distract(w[1], 1, lesson, course, rnd, 3)), rnd) });
+      add({
+        type: 'mc',
+        dir: 'de-en',
+        prompt: w[0],
+        speak: w[0],
+        answer: w[1],
+        options: shuffle([w[1]].concat(distract(w[1], 1, lesson, course, rnd, 3)), rnd),
+      });
     }
 
     const pairWords = pick(words, Math.min(5, words.length), rnd);
     add({ type: 'match', pairs: pairWords.map((w) => [w[0], w[1]]) });
 
     for (const w of pick(words, Math.min(2, words.length), rnd)) {
-      add({ type: 'mc', dir: 'en-de', prompt: w[1], answer: w[0],
-        options: shuffle([w[0]].concat(distract(w[0], 0, lesson, course, rnd, 3)), rnd) });
+      add({
+        type: 'mc',
+        dir: 'en-de',
+        prompt: w[1],
+        answer: w[0],
+        options: shuffle([w[0]].concat(distract(w[0], 0, lesson, course, rnd, 3)), rnd),
+      });
     }
 
     if (opts.speech) {
       for (const w of pick(words, Math.min(2, words.length), rnd)) {
-        add({ type: 'listen', speak: w[0], answer: w[0],
-          options: shuffle([w[0]].concat(distract(w[0], 0, lesson, course, rnd, 3)), rnd) });
+        add({
+          type: 'listen',
+          speak: w[0],
+          answer: w[0],
+          options: shuffle([w[0]].concat(distract(w[0], 0, lesson, course, rnd, 3)), rnd),
+        });
       }
     } else {
       for (const w of pick(words, Math.min(2, words.length), rnd)) {
-        add({ type: 'mc', dir: 'de-en', prompt: w[0], speak: w[0], answer: w[1],
-          options: shuffle([w[1]].concat(distract(w[1], 1, lesson, course, rnd, 3)), rnd) });
+        add({
+          type: 'mc',
+          dir: 'de-en',
+          prompt: w[0],
+          speak: w[0],
+          answer: w[1],
+          options: shuffle([w[1]].concat(distract(w[1], 1, lesson, course, rnd, 3)), rnd),
+        });
       }
     }
 
@@ -110,15 +152,27 @@
         if (decoys.length >= 2) break;
         if (!have.has(norm(t)) && !decoys.some((d) => norm(d) === norm(t))) decoys.push(t);
       }
-      add({ type: 'build', prompt: s[1], answer: toks, display: s[0], speak: s[0],
-        bank: shuffle(toks.concat(decoys), rnd) });
+      add({
+        type: 'build',
+        prompt: s[1],
+        answer: toks,
+        display: s[0],
+        speak: s[0],
+        bank: shuffle(toks.concat(decoys), rnd),
+      });
     }
 
     for (const w of pick(words, Math.min(3, words.length), rnd)) {
       const accepted = [w[0]];
       const bare = w[0].replace(ARTICLES, '');
       if (bare !== w[0]) accepted.push(bare);
-      add({ type: 'type', prompt: w[1], answer: w[0], accepted, bare: bare !== w[0] ? bare : null });
+      add({
+        type: 'type',
+        prompt: w[1],
+        answer: w[0],
+        accepted,
+        bare: bare !== w[0] ? bare : null,
+      });
     }
     return ex;
   };
@@ -139,7 +193,12 @@
         if (!got) return { ok: false, expected: e.answer };
         const full = norm(e.answer);
         if (got === full) return { ok: true, expected: e.answer };
-        if (e.bare && got === norm(e.bare)) return { ok: true, expected: e.answer, note: 'Include the article next time: ' + e.answer };
+        if (e.bare && got === norm(e.bare))
+          return {
+            ok: true,
+            expected: e.answer,
+            note: 'Include the article next time: ' + e.answer,
+          };
         return { ok: false, expected: e.answer };
       }
       case 'match':
@@ -149,7 +208,9 @@
   };
 
   // XP for a finished lesson
-  GL.xpFor = function (correct, total) { return 10 + Math.max(0, correct); };
+  GL.xpFor = function (correct, total) {
+    return 10 + Math.max(0, correct);
+  };
 
   if (typeof module !== 'undefined') module.exports = GL;
 })();
