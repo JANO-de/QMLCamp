@@ -45,3 +45,5 @@ Notes:
 - First sign-in on a device unions local and remote data; later it is last-write-wins per key.
 - Open pages re-check on focus and every 60 s and show a Reload banner if another device changed data.
 - Sign out removes the local copy; the gist keeps it. The token is stored in this browser only.
+
+**Username + password accounts (optional):** fill `js/sync-config.js` with a Supabase project (free) and run `supabase/setup.sql`; the sync button then offers *Sign in / Create account*. Steps and limits (no password reset): `supabase/README.md`. Without those values the GitHub-token sign-in above is used.
