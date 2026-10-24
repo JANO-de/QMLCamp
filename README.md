@@ -36,8 +36,6 @@ Notes:
 - The Planner always opens a plan in **reading mode** (plain text, no fields). Only task checkboxes and the time +/− buttons stay live so you can track progress. Press **Edit plan** to change titles, tags and blocks; **Done editing** goes back. Switching plans, reloading and importing all return to reading mode; a brand-new blank plan opens in edit mode. `planner/index.html#plan=<id>` opens a specific plan.
 - The QMLCamp welcome page shows widgets: where you left off, overall progress, GENLearn stats and a **study plan viewer**. The plan selector in that widget picks which Planner plan is shown; the choice is stored in `qmlcamp-home-v1`.
 - GENLearn uses a paper-notebook look (`genlearn/genlearn.css`), with light and dark (night desk) variants that follow the system setting.
-<<<<<<< HEAD
-=======
 
 ## Users and sync
 
@@ -47,4 +45,3 @@ Notes:
 - First sign-in on a device unions local and remote data; later it is last-write-wins per key.
 - Open pages re-check on focus and every 60 s and show a Reload banner if another device changed data.
 - Sign out removes the local copy; the gist keeps it. The token is stored in this browser only.
->>>>>>> d11d1ac (Changes to be committed:)
