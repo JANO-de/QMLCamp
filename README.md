@@ -36,3 +36,15 @@ Notes:
 - The Planner always opens a plan in **reading mode** (plain text, no fields). Only task checkboxes and the time +/− buttons stay live so you can track progress. Press **Edit plan** to change titles, tags and blocks; **Done editing** goes back. Switching plans, reloading and importing all return to reading mode; a brand-new blank plan opens in edit mode. `planner/index.html#plan=<id>` opens a specific plan.
 - The QMLCamp welcome page shows widgets: where you left off, overall progress, GENLearn stats and a **study plan viewer**. The plan selector in that widget picks which Planner plan is shown; the choice is stored in `qmlcamp-home-v1`.
 - GENLearn uses a paper-notebook look (`genlearn/genlearn.css`), with light and dark (night desk) variants that follow the system setting.
+<<<<<<< HEAD
+=======
+
+## Users and sync
+
+`js/sync.js` (loaded first on QMLCamp, GENLearn, Planner). GitHub Pages is static, so data goes to the user's own **private gist** (`qmlcamp-sync.json`). Click the sync button in the top tabs, create a classic token with scope `gist` only, paste it. Progress, lab files, custom courses, plans and home settings then save automatically (1.5 s after each change, and on close/hide) and load on any device with the same sign-in.
+
+- Synced keys: `qmlcamp.v1`, `qmlcamp.courses.v1`, `qmlcamp-planner-v1`, `qmlcamp-home-v1`, `genlearn.v1`, `genlearn.courses.v1`.
+- First sign-in on a device unions local and remote data; later it is last-write-wins per key.
+- Open pages re-check on focus and every 60 s and show a Reload banner if another device changed data.
+- Sign out removes the local copy; the gist keeps it. The token is stored in this browser only.
+>>>>>>> d11d1ac (Changes to be committed:)
