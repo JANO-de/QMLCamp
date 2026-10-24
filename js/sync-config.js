@@ -7,7 +7,7 @@
 //  Full steps: supabase/README.md
 // =============================================================================
 window.QML_SYNC_CONFIG = {
-  supabaseUrl: '', // e.g. 'https://abcdefgh.supabase.co'
-  supabaseAnonKey: '', // the long "anon public" key
-  emailDomain: 'qmlcamp.example.com', // usernames become <name>@this-domain; any domain works
+  supabaseUrl: 'https://ribghdmmmpzchhvuizqa.supabase.co',
+  supabaseAnonKey: 'sb_publishable_GPw2Draq1AiQ-7KtQNJ7_Q_oD9xg0ZT',
+  emailDomain: 'qmlcamp.example.com',
 };
