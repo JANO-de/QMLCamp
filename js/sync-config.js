@@ -9,5 +9,5 @@
 window.QML_SYNC_CONFIG = {
   supabaseUrl: 'https://ribghdmmmpzchhvuizqa.supabase.co',
   supabaseAnonKey: 'sb_publishable_GPw2Draq1AiQ-7KtQNJ7_Q_oD9xg0ZT',
-  emailDomain: 'qmlcamp.example.com',
+  emailDomain: '',
 };

@@ -46,4 +46,4 @@ Notes:
 - Open pages re-check on focus and every 60 s and show a Reload banner if another device changed data.
 - Sign out removes the local copy; the gist keeps it. The token is stored in this browser only.
 
-**Username + password accounts (optional):** fill `js/sync-config.js` with a Supabase project (free) and run `supabase/setup.sql`; the sync button then offers *Sign in / Create account*. Steps and limits (no password reset): `supabase/README.md`. Without those values the GitHub-token sign-in above is used.
+**Username + password accounts (optional):** fill `js/sync-config.js` with a Supabase project (free) and run `supabase/setup.sql`; the sync button then offers *Sign in / Create account* with e-mail + password (no domain needed). Steps and limits: `supabase/README.md`. Without those values the GitHub-token sign-in above is used.

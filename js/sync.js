@@ -30,8 +30,12 @@
   var SB = window.QML_SYNC_CONFIG || {},
     SB_URL = String(SB.supabaseUrl || '').replace(/\/+$/, ''),
     SB_KEY = SB.supabaseAnonKey || '',
-    SB_MAIL = SB.emailDomain || 'qmlcamp.example.com',
-    mode = SB_URL && SB_KEY ? 'account' : 'token';
+    SB_MAIL = String(SB.emailDomain || '').trim(),
+    // Without emailDomain people sign in with their real e-mail address.
+    EMAIL_MODE = !SB_MAIL,
+    mode = SB_URL && SB_KEY ? 'account' : 'token',
+    view = '', // '' | 'forgot': sub-view of the account dialog
+    recovery = null; // set when the page was opened from a password-reset e-mail link
   var setRaw = Storage.prototype.setItem,
     delRaw = Storage.prototype.removeItem;
   var cfg = readJ(CFG, null),
@@ -65,6 +69,16 @@
   function isKey(k) {
     return KEYS.indexOf(k) >= 0;
   }
+
+  // ---- password-reset link: Supabase opens the site as  <site>#access_token=...&type=recovery
+  // Take the token out of the address right away so the apps' routers never see it.
+  (function () {
+    var p = new URLSearchParams(location.hash.slice(1));
+    if (p.get('type') === 'recovery' && p.get('access_token')) {
+      recovery = { token: p.get('access_token') };
+      history.replaceState(null, '', location.pathname + location.search + '#/');
+    }
+  })();
 
   // ---- watch writes (must be installed before the apps run)
   Storage.prototype.setItem = function (k, v) {
@@ -232,7 +246,12 @@
   function sbError(r, j) {
     var m = j.error_description || j.msg || j.message || j.error || 'Server error ' + r.status;
     if (/invalid login/i.test(m)) m = 'Wrong username or password.';
-    else if (/already (been )?registered/i.test(m)) m = 'That username is taken.';
+    else if (/already (been )?registered/i.test(m)) m = EMAIL_MODE ? 'That e-mail address already has an account.' : 'That username is taken.';
+    else if (/email address .* is invalid/i.test(m))
+      m =
+        'The server rejected the e-mail domain "' +
+        SB_MAIL +
+        '". Set emailDomain in js/sync-config.js to a domain that has MX records (see supabase/README.md).';
     else if (/rate limit/i.test(m)) m = 'Too many attempts. Wait a minute and try again.';
     var e = new Error(m);
     if (r.status === 401) e.auth = 1;
@@ -491,25 +510,34 @@
       });
   }
   // Username + password sign-in or sign-up (supabase backend).
-  function signInAccount(username, password, create) {
-    var u = String(username || '')
+  function signInAccount(id, password, create) {
+    var u = String(id || '')
       .trim()
       .toLowerCase();
-    if (!/^[a-z0-9][a-z0-9_-]{2,31}$/.test(u))
-      return Promise.reject(
-        new Error('Username: 3 to 32 characters, letters, digits, - and _ only.')
-      );
+    var email = u;
+    if (EMAIL_MODE) {
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(u))
+        return Promise.reject(new Error('Enter a valid e-mail address.'));
+    } else {
+      if (!/^[a-z0-9][a-z0-9_-]{2,31}$/.test(u))
+        return Promise.reject(
+          new Error('Username: 3 to 32 characters, letters, digits, - and _ only.')
+        );
+      email = u + '@' + SB_MAIL;
+    }
     if (String(password || '').length < 8)
       return Promise.reject(new Error('The password needs at least 8 characters.'));
     var prev = cfg;
     return sbAuth(create ? '/auth/v1/signup' : '/auth/v1/token?grant_type=password', {
-      email: u + '@' + SB_MAIL,
+      email: email,
       password: password,
     })
       .then(function (sess) {
         if (!sess.access_token)
           throw new Error(
-            'The server wants e-mail confirmation. Turn off "Confirm email" in Supabase (Authentication > Providers > Email).'
+            EMAIL_MODE
+              ? 'Almost done: open the confirmation e-mail we sent you, then sign in here.'
+              : 'The server wants e-mail confirmation. Turn off "Confirm email" in Supabase (Authentication > Providers > Email).'
           );
         if (prev && (prev.user !== u || prev.backend !== 'supabase')) wipeLocal();
         cfg = { backend: 'supabase', user: u };
@@ -520,6 +548,21 @@
       .then(function () {
         if (status === 'error' || status === 'auth') throw new Error(msg);
       });
+  }
+  // Password reset, step 1: Supabase e-mails a link that opens this site (see "Site URL").
+  function sendReset(email) {
+    email = String(email || '')
+      .trim()
+      .toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+      return Promise.reject(new Error('Enter a valid e-mail address.'));
+    return sbAuth('/auth/v1/recover', { email: email });
+  }
+  // Password reset, step 2: the link brought a temporary token; use it to set the new password.
+  function setNewPassword(password) {
+    if (String(password || '').length < 8)
+      return Promise.reject(new Error('The password needs at least 8 characters.'));
+    return sbCall('/auth/v1/user', 'PUT', recovery.token, JSON.stringify({ password: password }));
   }
   function wipeLocal() {
     applying = true;
@@ -586,14 +629,32 @@
           auth: msg,
           idle: '',
         }[status] || '';
+    } else if (recovery) {
+      box.innerHTML =
+        '<p>Choose a new password for your account.</p><input data-f="newpass" type="password" autocomplete="new-password" placeholder="new password (8+ characters)" aria-label="New password"><p class="qs-s"></p><div class="qs-row"><button type="button" data-a="setpass">Save password</button><button type="button" data-a="close">Close</button></div>';
+    } else if (mode === 'account' && view === 'forgot') {
+      box.innerHTML =
+        '<p>Enter your e-mail address and we send you a link to choose a new password.</p><input data-f="user" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="e-mail" aria-label="E-mail"><p class="qs-s"></p><div class="qs-row"><button type="button" data-a="sendreset">Send link</button><button type="button" data-a="back">Back</button></div>';
     } else if (mode === 'account') {
       box.innerHTML =
-        '<p>Sign in with your username and password, or create an account. Your progress, courses and plans then follow you to every device.</p><input data-f="user" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="username" aria-label="Username"><input data-f="pass" type="password" autocomplete="current-password" placeholder="password (8+ characters)" aria-label="Password"><p class="qs-s"></p><div class="qs-row"><button type="button" data-a="login">Sign in</button><button type="button" data-a="signup">Create account</button><button type="button" data-a="close">Close</button></div><p class="qs-alt"><a href="#" data-a="tokenmode">Use a GitHub token instead</a></p>';
+        '<p>Sign in with your ' +
+        (EMAIL_MODE ? 'e-mail address' : 'username') +
+        ' and password, or create an account. Your progress, courses and plans then follow you to every device.</p><input data-f="user" type="' +
+        (EMAIL_MODE ? 'email' : 'text') +
+        '" autocomplete="' +
+        (EMAIL_MODE ? 'email' : 'username') +
+        '" autocapitalize="off" spellcheck="false" placeholder="' +
+        (EMAIL_MODE ? 'e-mail' : 'username') +
+        '" aria-label="' +
+        (EMAIL_MODE ? 'E-mail' : 'Username') +
+        '"><input data-f="pass" type="password" autocomplete="current-password" placeholder="password (8+ characters)" aria-label="Password"><p class="qs-s"></p><div class="qs-row"><button type="button" data-a="login">Sign in</button><button type="button" data-a="signup">Create account</button><button type="button" data-a="close">Close</button></div>' +
+        (EMAIL_MODE ? '<p class="qs-alt"><a href="#" data-a="forgot">Forgot password?</a></p>' : '') +
+        '<p class="qs-alt"><a href="#" data-a="tokenmode">Use a GitHub token instead</a></p>';
     } else {
       box.innerHTML =
         '<p>Create a token (classic, scope <b>gist</b> only), paste it here. Your data lives in a private gist in your GitHub account.</p><p><a target="_blank" rel="noopener" href="https://github.com/settings/tokens/new?scopes=gist&description=QMLCamp%20sync">Create token</a></p><input data-f="token" type="password" autocomplete="off" placeholder="ghp_\u2026" aria-label="GitHub token"><p class="qs-s"></p><div class="qs-row"><button type="button" data-a="in">Sign in</button><button type="button" data-a="close">Close</button></div>' +
         (SB_URL && SB_KEY
-          ? '<p class="qs-alt"><a href="#" data-a="accountmode">Use username and password instead</a></p>'
+          ? '<p class="qs-alt"><a href="#" data-a="accountmode">Use e-mail/username and password instead</a></p>'
           : '');
     }
   }
@@ -636,7 +697,28 @@
       function fail(er) {
         s.textContent = er.message || 'Failed';
       }
-      if (a === 'tokenmode' || a === 'accountmode') {
+      if (a === 'forgot' || a === 'back') {
+        e.preventDefault();
+        view = a === 'forgot' ? 'forgot' : '';
+        fillDlg();
+      } else if (a === 'sendreset') {
+        s.textContent = 'Sending\u2026';
+        sendReset(field('user'))
+          .then(function () {
+            s.textContent = 'If that address has an account, a link is on its way. Check your inbox.';
+          })
+          .catch(fail);
+      } else if (a === 'setpass') {
+        s.textContent = 'Saving\u2026';
+        setNewPassword(field('newpass'))
+          .then(function () {
+            recovery = null;
+            view = '';
+            fillDlg();
+            dlg.querySelector('.qs-s').textContent = 'Password changed. Sign in with the new password.';
+          })
+          .catch(fail);
+      } else if (a === 'tokenmode' || a === 'accountmode') {
         e.preventDefault();
         mode = a === 'tokenmode' ? 'token' : 'account';
         fillDlg();
@@ -664,6 +746,10 @@
       }
     });
     render();
+    if (recovery) {
+      fillDlg();
+      dlg.showModal ? dlg.showModal() : dlg.setAttribute('open', '');
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildUI);
   else buildUI();
