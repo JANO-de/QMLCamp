@@ -50,6 +50,35 @@
     location.hash = hash;
   }
 
+  // Unsaved-changes guard: closing the tab asks first, and clicking a link that would leave the
+  // editor shows an in-page "Leave without saving?" question instead of silently losing work.
+  window.addEventListener('beforeunload', (e) => {
+    if (FC.dirty && location.hash.indexOf('#/creator') === 0) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+  document.addEventListener(
+    'click',
+    (e) => {
+      if (!FC.dirty || location.hash.indexOf('#/creator') !== 0) return;
+      const a = e.target.closest && e.target.closest('a[href^="#/"]');
+      if (!a || a.getAttribute('href').indexOf('#/creator') === 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      window.QmlUI.confirm('You have unsaved changes in this course. Leave without saving?', {
+        ok: 'Leave without saving',
+        danger: true,
+        cancel: 'Keep editing',
+      }).then((leave) => {
+        if (!leave) return;
+        FC.dirty = false;
+        location.hash = a.getAttribute('href');
+      });
+    },
+    true
+  );
+
   // ------------------------------------------------------------------ entry
   FC.view = function (tail) {
     const id = (tail.split('/')[1] || '').trim();
@@ -102,6 +131,7 @@
   }
 
   function newDraft() {
+    FC.dirty = false;
     setEngine('qmlcamp');
     draft = { id: F.newId('my-course'), title: '', desc: '', lang: 'qml', modules: [] };
     idTouched = false;
@@ -111,6 +141,7 @@
   }
 
   function openExisting(id) {
+    FC.dirty = false;
     const stored = F.storedList().find((c) => c.id === id);
     if (stored) {
       setEngine('qmlcamp');
@@ -200,7 +231,7 @@
             onclick: () => {
               const nid = F.duplicateCourse(draft.id);
               if (nid) go('#/creator/' + nid);
-              else alert('Save the course first.');
+              else QmlUI.toast('Save the course first.');
             },
           },
           'Duplicate'
@@ -210,8 +241,12 @@
           {
             class: 'btn sm ghost',
             onclick: () => {
-              if (confirm('Delete "' + (draft.title || draft.id) + '" from this browser?'))
-                F.deleteCourse(draft.id);
+              QmlUI.confirm('Delete "' + (draft.title || draft.id) + '" from this browser?', {
+                ok: 'Delete',
+                danger: true,
+              }).then((yes) => {
+                if (yes) F.deleteCourse(draft.id);
+              });
             },
           },
           'Delete'
@@ -326,11 +361,15 @@
               class: 'cw-x',
               title: 'Delete module',
               onclick: () => {
-                if (confirm('Delete this module and its blocks?')) {
+                QmlUI.confirm('Delete this module and its blocks?', {
+                  ok: 'Delete',
+                  danger: true,
+                }).then((yes) => {
+                  if (!yes) return;
                   draft.modules.splice(mi, 1);
                   sel = { kind: 'course' };
                   render();
-                }
+                });
               },
             },
             '\u2715'
@@ -684,7 +723,7 @@
       return render();
     }
     F.exportCourse(draft);
-    alert(
+    QmlUI.alert(
       'Downloaded ' +
         draft.id +
         '.js.\n\nPut it in custom/ and add this line to custom/index.js:\n\n' +
@@ -699,7 +738,7 @@
     }
     const c = F.reid(JSON.parse(JSON.stringify(tpl)), draft.id, draft.title || tpl.title);
     F.download(c.id + '.js', F.exportText(c, 'qmlcamp'));
-    alert(
+    QmlUI.alert(
       'Downloaded a filled template ' +
         c.id +
         '.js.\n\nPut it in custom/ and add this line to custom/index.js:\n\n' +
@@ -714,7 +753,7 @@
       onchange: (e) => {
         if (e.target.files[0])
           F.importFile(e.target.files[0], (res) => {
-            if (res.error) alert('Import failed: ' + res.error);
+            if (res.error) QmlUI.alert('Import failed: ' + res.error);
             else go('#/creator/' + res.id);
           });
         e.target.value = '';
@@ -743,7 +782,7 @@
             class: 'btn sm',
             onclick: () => {
               const res = F.importCourse(box.querySelector('textarea').value);
-              if (res.error) alert('Import failed: ' + res.error);
+              if (res.error) QmlUI.alert('Import failed: ' + res.error);
               else {
                 box.remove();
                 go('#/creator/' + res.id);

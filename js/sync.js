@@ -34,6 +34,7 @@
     // Without emailDomain people sign in with their real e-mail address.
     EMAIL_MODE = !SB_MAIL,
     mode = SB_URL && SB_KEY ? 'account' : 'token',
+    signupMode = false, // account dialog: false = Sign in form, true = Create account form
     view = '', // '' | 'forgot': sub-view of the account dialog
     recovery = null; // set when the page was opened from a password-reset e-mail link
   var setRaw = Storage.prototype.setItem,
@@ -246,7 +247,8 @@
   function sbError(r, j) {
     var m = j.error_description || j.msg || j.message || j.error || 'Server error ' + r.status;
     if (/invalid login/i.test(m)) m = 'Wrong username or password.';
-    else if (/already (been )?registered/i.test(m)) m = EMAIL_MODE ? 'That e-mail address already has an account.' : 'That username is taken.';
+    else if (/already (been )?registered/i.test(m))
+      m = EMAIL_MODE ? 'That e-mail address already has an account.' : 'That username is taken.';
     else if (/email address .* is invalid/i.test(m))
       m =
         'The server rejected the e-mail domain "' +
@@ -434,21 +436,27 @@
       Date.now() - +sessionStorage.getItem('qmlcamp-sync-reload') > 15000;
     if (!window.__qmlSyncLive && first) {
       sessionStorage.setItem('qmlcamp-sync-reload', String(Date.now()));
+      sessionStorage.setItem(
+        'qmlcamp-sync-notice',
+        'Loaded your latest progress from your account.'
+      );
       location.reload();
       return;
     }
     banner();
   }
+  // Another device saved newer data while this page was open: offer a reload (never forced).
+  var bannerShown = false;
   function banner() {
-    if (document.getElementById('qs-banner')) return;
-    var b = document.createElement('div');
-    b.id = 'qs-banner';
-    b.className = 'qs-banner';
-    b.innerHTML = 'Newer data from another device. <button type="button">Reload</button>';
-    b.querySelector('button').onclick = function () {
-      location.reload();
-    };
-    document.body.appendChild(b);
+    if (bannerShown) return;
+    bannerShown = true;
+    QmlUI.toast('Newer progress from another device is available.', {
+      label: 'Reload',
+      ms: 600000,
+      onClick: function () {
+        location.reload();
+      },
+    });
   }
 
   // flush on close / hide (keepalive so it survives the page)
@@ -591,26 +599,63 @@
     msg = m || '';
     render();
   }
+  // Text of the top-bar button: always says what is happening, in plain words.
   function label() {
     if (!cfg) return 'Sign in to sync';
-    var n = cfg.user || 'user';
     return (
       {
-        idle: n,
-        ok: '\u25CF ' + n + ' \u2713',
-        pending: '\u25CF ' + n + ' \u2026',
-        syncing: '\u21BB ' + n,
-        error: '\u26A0 ' + n + ' (offline)',
-        auth: '\u26A0 sign in again',
-      }[status] || n
+        idle: '\u2713 Saved',
+        ok: '\u2713 Saved',
+        pending: 'Saving\u2026',
+        syncing: '\u21BB Syncing\u2026',
+        error: '\u26A0 Offline, will retry',
+        auth: '\u26A0 Sign in again',
+      }[status] || 'Sync'
     );
   }
   function render() {
     if (btn) {
       btn.textContent = label();
-      btn.title = msg || '';
+      btn.title = (cfg && cfg.user ? cfg.user + ': ' : '') + (msg || '');
+      btn.setAttribute(
+        'aria-label',
+        (cfg && cfg.user ? 'Sync, signed in as ' + cfg.user + '. ' : '') + label()
+      );
     }
+    // "Sign in to keep your progress" cards on the pages disappear once signed in.
+    Array.prototype.forEach.call(document.querySelectorAll('.qs-promo'), function (e) {
+      e.hidden = !!cfg;
+    });
     if (dlg && dlg.open) fillDlg();
+  }
+  // Live help under the form: says exactly what is still missing; the main button stays
+  // disabled until the form can succeed.
+  function refreshForm() {
+    var u = dlg.querySelector('[data-f="user"]'),
+      p = dlg.querySelector('[data-f="pass"]'),
+      go = dlg.querySelector('.qs-main'),
+      hint = dlg.querySelector('.qs-hint');
+    if (!u || !p || !go || !hint) return;
+    var name = u.value.trim();
+    var uOk = EMAIL_MODE
+      ? /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(name)
+      : /^[a-zA-Z0-9][a-zA-Z0-9_-]{2,31}$/.test(name);
+    var pOk = p.value.length >= 8;
+    if (signupMode) {
+      var miss = [];
+      if (!uOk)
+        miss.push(
+          EMAIL_MODE ? 'a valid e-mail address' : 'a username (3 to 32 letters, digits, - or _)'
+        );
+      if (!pOk) miss.push('a password with 8+ characters (' + p.value.length + '/8)');
+      hint.textContent = miss.length
+        ? 'Still needed: ' + miss.join(' and ') + '.'
+        : '\u2713 Looks good.';
+      go.disabled = !(uOk && pOk);
+    } else {
+      hint.textContent = '';
+      go.disabled = !(name && p.value);
+    }
   }
   function fillDlg() {
     var box = dlg.querySelector('.qs-body');
@@ -636,19 +681,36 @@
       box.innerHTML =
         '<p>Enter your e-mail address and we send you a link to choose a new password.</p><input data-f="user" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="e-mail" aria-label="E-mail"><p class="qs-s"></p><div class="qs-row"><button type="button" data-a="sendreset">Send link</button><button type="button" data-a="back">Back</button></div>';
     } else if (mode === 'account') {
+      var who = EMAIL_MODE ? 'e-mail' : 'username';
       box.innerHTML =
-        '<p>Sign in with your ' +
-        (EMAIL_MODE ? 'e-mail address' : 'username') +
-        ' and password, or create an account. Your progress, courses and plans then follow you to every device.</p><input data-f="user" type="' +
+        '<h2 class="qs-h">' +
+        (signupMode ? 'Create your account' : 'Sign in') +
+        '</h2><p>' +
+        (signupMode
+          ? 'One account keeps your progress, courses and plans on every device.'
+          : 'Welcome back. Sign in to load your progress on this device.') +
+        '</p><label class="qs-l">' +
+        (EMAIL_MODE ? 'E-mail address' : 'Username') +
+        '<input data-f="user" type="' +
         (EMAIL_MODE ? 'email' : 'text') +
         '" autocomplete="' +
         (EMAIL_MODE ? 'email' : 'username') +
         '" autocapitalize="off" spellcheck="false" placeholder="' +
-        (EMAIL_MODE ? 'e-mail' : 'username') +
-        '" aria-label="' +
-        (EMAIL_MODE ? 'E-mail' : 'Username') +
-        '"><input data-f="pass" type="password" autocomplete="current-password" placeholder="password (8+ characters)" aria-label="Password"><p class="qs-s"></p><div class="qs-row"><button type="button" data-a="login">Sign in</button><button type="button" data-a="signup">Create account</button><button type="button" data-a="close">Close</button></div>' +
-        (EMAIL_MODE ? '<p class="qs-alt"><a href="#" data-a="forgot">Forgot password?</a></p>' : '') +
+        who +
+        '"></label><label class="qs-l">Password<input data-f="pass" type="password" autocomplete="' +
+        (signupMode ? 'new-password' : 'current-password') +
+        '" placeholder="8 or more characters"></label><label class="qs-show"><input type="checkbox" data-a="showpass"> Show password</label><p class="qs-hint" aria-live="polite"></p><p class="qs-s" aria-live="polite"></p><div class="qs-row"><button type="button" class="qs-main" data-a="' +
+        (signupMode ? 'signup' : 'login') +
+        '">' +
+        (signupMode ? 'Create account' : 'Sign in') +
+        '</button><button type="button" data-a="close">Close</button></div><p class="qs-alt">' +
+        (signupMode
+          ? 'Already have an account? <a href="#" data-a="togglesignup">Sign in</a>'
+          : 'New here? <a href="#" data-a="togglesignup">Create an account</a>') +
+        '</p>' +
+        (EMAIL_MODE && !signupMode
+          ? '<p class="qs-alt"><a href="#" data-a="forgot">Forgot password?</a></p>'
+          : '') +
         '<p class="qs-alt"><a href="#" data-a="tokenmode">Use a GitHub token instead</a></p>';
     } else {
       box.innerHTML =
@@ -657,6 +719,11 @@
           ? '<p class="qs-alt"><a href="#" data-a="accountmode">Use e-mail/username and password instead</a></p>'
           : '');
     }
+    refreshForm();
+  }
+  function openDialog() {
+    fillDlg();
+    dlg.showModal ? dlg.showModal() : dlg.setAttribute('open', '');
   }
   function buildUI() {
     var st = document.createElement('style');
@@ -664,6 +731,14 @@
       '.qs-btn{margin:0 0 6px auto;align-self:center;font:600 13px/1.4 inherit;font-family:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:6px;padding:4px 10px;cursor:pointer;opacity:.85}.qs-btn:hover{opacity:1}' +
       '.qs-dlg{border:1px solid currentColor;border-radius:10px;padding:16px 20px;max-width:420px;font:15px/1.5 system-ui,sans-serif;background:Canvas;color:CanvasText}.qs-dlg input{width:100%;box-sizing:border-box;padding:6px;margin:6px 0;font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:6px}' +
       '.qs-row{display:flex;gap:8px;flex-wrap:wrap}.qs-row button{font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:6px;padding:4px 12px;cursor:pointer}.qs-s{min-height:1.4em;opacity:.8}.qs-alt{font-size:13px;margin:10px 0 0}' +
+      '.qs-dlg{width:min(92vw,420px);max-height:90vh;overflow:auto;box-sizing:border-box}.qs-h{font-size:18px;margin:0 0 6px}' +
+      '.qs-l{display:block;font-size:13px;margin:10px 0 0}.qs-l input{display:block;padding:10px;font-size:16px}' +
+      '.qs-show{display:flex;gap:8px;align-items:center;font-size:13px;margin:6px 0}.qs-show input{width:auto;margin:0}' +
+      '.qs-hint{font-size:13px;min-height:1.3em;margin:4px 0}' +
+      '.qs-row button{min-height:44px;padding:8px 16px;border-radius:8px}.qs-row .qs-main{background:currentColor}.qs-row .qs-main{color:Canvas;mix-blend-mode:normal}' +
+      '.qs-row button:disabled{opacity:.45;cursor:not-allowed}.qs-btn{min-height:36px}' +
+      '.qs-btn:focus-visible,.qs-dlg :focus-visible{outline:3px solid #4c9ffe;outline-offset:2px}' +
+      '.qs-promo{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px;margin:12px 0;border:1px solid currentColor;border-radius:10px;font-size:14px}.qs-promo button{font:inherit;font-weight:600;min-height:40px;padding:6px 14px;border-radius:8px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer}' +
       '.qs-banner{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99999;padding:8px 14px;border-radius:8px;background:Canvas;color:CanvasText;border:1px solid currentColor;font:14px system-ui,sans-serif}.qs-banner button{margin-left:8px;font:inherit}';
     document.head.appendChild(st);
     var nav = document.querySelector('nav[aria-label="Sites"]');
@@ -679,10 +754,26 @@
     dlg.className = 'qs-dlg';
     dlg.innerHTML = '<div class="qs-body"></div>';
     document.body.appendChild(dlg);
-    btn.onclick = function () {
-      fillDlg();
-      dlg.showModal ? dlg.showModal() : dlg.setAttribute('open', '');
-    };
+    btn.onclick = openDialog;
+    // After an automatic reload (new data arrived) say why the page just refreshed.
+    var notice = sessionStorage.getItem('qmlcamp-sync-notice');
+    if (notice) {
+      sessionStorage.removeItem('qmlcamp-sync-notice');
+      QmlUI.toast(notice);
+    }
+    dlg.addEventListener('input', refreshForm);
+    dlg.addEventListener('keydown', function (e) {
+      // Enter in a field presses the main button (if it is enabled).
+      if (e.key === 'Enter' && e.target.matches && e.target.matches('input[data-f]')) {
+        var go = dlg.querySelector(
+          '.qs-main, [data-a="sendreset"], [data-a="setpass"], [data-a="in"]'
+        );
+        if (go && !go.disabled) {
+          e.preventDefault();
+          go.click();
+        }
+      }
+    });
     dlg.addEventListener('click', function (e) {
       var a = e.target.getAttribute && e.target.getAttribute('data-a'),
         s = dlg.querySelector('.qs-s');
@@ -697,7 +788,15 @@
       function fail(er) {
         s.textContent = er.message || 'Failed';
       }
-      if (a === 'forgot' || a === 'back') {
+      if (a === 'showpass') {
+        // (a checkbox: the click handler runs after the state changed)
+        dlg.querySelector('[data-f="pass"]').type = e.target.checked ? 'text' : 'password';
+        return;
+      } else if (a === 'togglesignup') {
+        e.preventDefault();
+        signupMode = !signupMode;
+        fillDlg();
+      } else if (a === 'forgot' || a === 'back') {
         e.preventDefault();
         view = a === 'forgot' ? 'forgot' : '';
         fillDlg();
@@ -705,7 +804,8 @@
         s.textContent = 'Sending\u2026';
         sendReset(field('user'))
           .then(function () {
-            s.textContent = 'If that address has an account, a link is on its way. Check your inbox.';
+            s.textContent =
+              'If that address has an account, a link is on its way. Check your inbox.';
           })
           .catch(fail);
       } else if (a === 'setpass') {
@@ -715,7 +815,8 @@
             recovery = null;
             view = '';
             fillDlg();
-            dlg.querySelector('.qs-s').textContent = 'Password changed. Sign in with the new password.';
+            dlg.querySelector('.qs-s').textContent =
+              'Password changed. Sign in with the new password.';
           })
           .catch(fail);
       } else if (a === 'tokenmode' || a === 'accountmode') {
@@ -727,14 +828,17 @@
         window.__qmlSyncLive = true;
         sync();
       } else if (a === 'out') {
-        if (
-          confirm(
-            'Sign out? The local copy on this device is removed; your data stays in your account.'
-          )
-        )
-          signOut().then(function () {
-            fillDlg();
-          });
+        QmlUI.confirm(
+          'Sign out of ' +
+            (cfg && cfg.user) +
+            '?\n\nThe copy of your progress on THIS device is removed. Everything stays safe in your account, and you get it back when you sign in again.',
+          { ok: 'Sign out', danger: true }
+        ).then(function (yes) {
+          if (yes)
+            signOut().then(function () {
+              fillDlg();
+            });
+        });
       } else if (a === 'in') {
         s.textContent = 'Signing in\u2026';
         signIn(field('token')).then(done).catch(fail);
@@ -759,6 +863,25 @@
     signIn: signIn,
     signInAccount: signInAccount,
     signOut: signOut,
+    // A small "Sign in to keep your progress on every device" card; hides itself once signed in.
+    promo: function (text, buttonText) {
+      var d = document.createElement('div');
+      d.className = 'qs-promo';
+      d.hidden = !!cfg;
+      var t = document.createElement('span');
+      t.textContent = text;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = buttonText;
+      b.onclick = function () {
+        if (dlg) openDialog();
+      };
+      d.append(t, b);
+      return d;
+    },
+    open: function () {
+      if (dlg) openDialog();
+    },
     keys: KEYS,
     status: function () {
       return status;

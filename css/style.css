@@ -931,3 +931,133 @@ pre {
 .tl li.more {
   color: var(--dim);
 }
+
+/* ---- UX pass: progress summary, celebration, hints, phone tabs, accessibility ---- */
+.tsum {
+  margin: 8px 0 4px;
+}
+.tsum-t {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.story.first {
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+  border-left: 3px solid var(--bad);
+  padding-left: 8px;
+}
+.celebrate {
+  margin: 12px 0;
+  padding: 14px 16px;
+  border: 2px solid var(--ok);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+  animation: pop 0.35s ease-out;
+}
+.celebrate[hidden] {
+  display: none;
+}
+.cel-t {
+  font-weight: 700;
+  font-size: 17px;
+  margin-bottom: 10px;
+  color: var(--ok);
+}
+@keyframes pop {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.hintout p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+.btn.big {
+  font-size: 17px;
+  padding: 10px 22px;
+}
+.labtabs {
+  display: none;
+}
+
+/* keyboard focus must always be visible */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #4c9ffe;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .celebrate {
+    animation: none;
+  }
+}
+
+/* phones and narrow windows: one pane at a time, big touch targets */
+@media (max-width: 900px) {
+  .labtabs {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin: 0 0 8px;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    padding: 6px 0;
+  }
+  .labtabs button {
+    font: 600 14px var(--sans);
+    color: var(--fg);
+    background: var(--bg2);
+    border: 2px solid var(--edge);
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-height: 44px;
+    cursor: pointer;
+  }
+  .labtabs button.on {
+    background: var(--fg);
+    color: var(--bg);
+  }
+  .labtabs .labrun {
+    margin-left: auto;
+    background: var(--gold);
+    color: var(--onacc);
+    border-color: var(--gold);
+  }
+  .lab {
+    min-height: 0;
+  }
+  .lab > .right {
+    grid-template-rows: auto;
+  }
+  .lab[data-pane='guide'] > .right,
+  .lab[data-pane='code'] > .left,
+  .lab[data-pane='preview'] > .left,
+  .lab[data-pane='code'] .lower,
+  .lab[data-pane='preview'] .edwrap {
+    display: none;
+  }
+  .lab .edwrap {
+    min-height: 55vh;
+  }
+  .lab .lower {
+    min-height: 60vh;
+  }
+  .btn,
+  .btn.sm {
+    min-height: 44px;
+  }
+  .tabs button {
+    min-height: 40px;
+  }
+}

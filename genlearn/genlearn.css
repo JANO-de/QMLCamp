@@ -723,3 +723,22 @@ details.tips li {
     animation: none !important;
   }
 }
+
+/* ---- UX pass ---- */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #4c9ffe;
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .btn,
+  .opt,
+  .special button,
+  .tile {
+    min-height: 44px;
+  }
+}

@@ -47,3 +47,12 @@ Notes:
 - Sign out removes the local copy; the gist keeps it. The token is stored in this browser only.
 
 **Username + password accounts (optional):** fill `js/sync-config.js` with a Supabase project (free) and run `supabase/setup.sql`; the sync button then offers *Sign in / Create account* with e-mail + password (no domain needed). Steps and limits: `supabase/README.md`. Without those values the GitHub-token sign-in above is used.
+
+## UX notes
+
+- `js/ui.js` replaces the browser's alert/confirm/prompt with in-page dialogs and toasts (with Undo in the Planner).
+- Sync button shows plain states (Saved, Saving, Offline, will retry); first sign-in explains the reload.
+- Labs: test progress bar, hint ladder (story, test message, solution), celebration + Next, quiet re-test after the first run; on phones the lab is split into Instructions / Code / Preview tabs.
+- Planner: "Next up" marker and button, richer empty state, Undo for deletes.
+- Course creator warns before you leave with unsaved changes.
+- Hint/tab/test-progress texts exist in English only; other languages fall back to English.

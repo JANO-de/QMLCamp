@@ -473,7 +473,7 @@
           onclick: () => {
             if (!exportable(c)) return;
             G.exportCourse(c);
-            alert(
+            QmlUI.alert(
               'Downloaded ' +
                 c.id +
                 '.js. Put it in custom/ and add to custom/index.js:\n\n' +
@@ -505,14 +505,14 @@
           {
             class: 'btn sm ghost',
             onclick: () => {
-              if (
-                confirm(
-                  'Delete "' +
-                    c.title +
-                    '" from this browser? The built-in courses are not affected.'
-                )
-              )
-                G.deleteCourse(c.id);
+              QmlUI.confirm(
+                'Delete "' +
+                  c.title +
+                  '" from this browser? The built-in courses are not affected.',
+                { ok: 'Delete', danger: true }
+              ).then((yes) => {
+                if (yes) G.deleteCourse(c.id);
+              });
             },
           },
           'Delete'

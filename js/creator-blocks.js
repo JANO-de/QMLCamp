@@ -142,10 +142,13 @@
               class: 'cw-x',
               title: 'Delete',
               onclick: () => {
-                if (confirm('Delete this ' + label + '?')) {
-                  items.splice(i, 1);
-                  ctx.refresh();
-                }
+                QmlUI.confirm('Delete this ' + label + '?', { ok: 'Delete', danger: true }).then(
+                  (yes) => {
+                    if (!yes) return;
+                    items.splice(i, 1);
+                    ctx.refresh();
+                  }
+                );
               },
             },
             '\u2715'
@@ -340,11 +343,14 @@
                 disabled: arr.length <= 1,
                 title: 'Delete file',
                 onclick: () => {
-                  if (confirm('Delete file ' + cur + '?')) {
-                    delete files[cur];
-                    refresh();
-                    on();
-                  }
+                  QmlUI.confirm('Delete file ' + cur + '?', { ok: 'Delete', danger: true }).then(
+                    (yes) => {
+                      if (!yes) return;
+                      delete files[cur];
+                      refresh();
+                      on();
+                    }
+                  );
                 },
               },
               '\u2715'

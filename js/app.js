@@ -452,6 +452,19 @@
     return box;
   }
 
+  // Big "continue" button at the very top of the welcome page (only when something was started).
+  function topResume() {
+    const lastC = C.courses.find((c) => c.id === prog.lastCourse);
+    if (!lastC) return null;
+    const r = resumeFor(lastC);
+    if (!r.started) return null;
+    return h(
+      'p',
+      {},
+      h('a', { class: 'btn big', href: r.href }, tr('contTop') + ' \u2192'),
+      h('span', { class: 'dim', style: 'margin-left:12px' }, r.label)
+    );
+  }
   function viewWelcome() {
     $app.append(
       h(
@@ -459,6 +472,8 @@
         { class: 'page', style: 'max-width:1100px' },
         h('h1', {}, tr('welcome')),
         h('p', {}, tr('welcomeP')),
+        topResume(),
+        window.QmlSync ? window.QmlSync.promo(tr('syncPromo'), tr('signInShort')) : null,
         h('div', { class: 'dash' }, resumeWidget(), progressWidget(), langWidget(), planWidget()),
         h(
           'div',
@@ -1140,8 +1155,17 @@
     const isRust = blockLang(b) === 'rust';
     const pg = playground(JSON.parse(JSON.stringify(start)), { lang: isRust ? 'rust' : 'qml' });
     cleanups.push(() => pg.rt && pg.rt.dispose());
-    let saveT = 0;
+    let saveT = 0,
+      autoT = 0,
+      ran = false, // the learner pressed "Run tests" at least once
+      lastRes = null; // results of the most recent test run
     pg.ed.el.addEventListener('input', () => {
+      // After the first manual run, re-check quietly 1.5 s after the learner stops typing,
+      // so the progress bar follows their work without pressing the button every time.
+      if (ran) {
+        clearTimeout(autoT);
+        autoT = setTimeout(() => test(false), 1500);
+      }
       clearTimeout(saveT);
       saveT = setTimeout(() => {
         prog.files[b.id] = pg.current();
@@ -1150,14 +1174,28 @@
     });
     const list = h('div', {});
     const msg = h('div', { style: 'margin:10px 0;font-weight:700' });
+    // "3 of 5 tests passing" with a bar, above the list of stories.
+    const sum = h('div', { class: 'tsum', 'aria-live': 'polite' });
     const renderStories = (res) => {
       list.innerHTML = '';
+      const total = b.tests.length,
+        passed = res ? res.filter((r) => r.ok).length : 0;
+      sum.innerHTML = '';
+      sum.append(
+        h(
+          'div',
+          { class: 'tsum-t' },
+          res ? tr('testsPassing', { p: passed, n: total }) : tr('testsTodo', { n: total })
+        ),
+        h('div', { class: 'bar' }, h('i', { style: 'width:' + (100 * passed) / total + '%' }))
+      );
+      const firstBad = res ? res.findIndex((r) => !r.ok) : -1;
       b.tests.forEach((t, i) => {
         const r = res && res[i];
         list.append(
           h(
             'div',
-            { class: 'story ' + (r ? (r.ok ? 'p' : 'f') : '') },
+            { class: 'story ' + (r ? (r.ok ? 'p' : 'f') : '') + (i === firstBad ? ' first' : '') },
             h('span', { class: 'm' }, r ? (r.ok ? '✓' : '✗') : i + 1 + '.'),
             h(
               'div',
@@ -1169,7 +1207,8 @@
         );
       });
     };
-    const test = () => {
+    const test = (manual) => {
+      ran = true;
       const files = pg.current();
       let res;
       if (isRust) {
@@ -1185,21 +1224,36 @@
         tmp.remove();
         pg.run();
       }
+      lastRes = res;
       renderStories(res);
       const pass = res.filter((r) => r.ok).length;
       if (pass === res.length) {
         msg.style.color = 'var(--ok)';
-        msg.textContent = tr('labOk');
+        msg.textContent = '';
         markDone(b.id);
         updateOverall();
-        nextBtn.style.display = '';
+        cele.hidden = false;
+        if (manual === true) nextBtn.focus();
       } else {
+        cele.hidden = true;
+        if (manual === true) {
+          const fb = list.querySelector('.story.first');
+          if (fb && fb.scrollIntoView) fb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
         msg.style.color = 'var(--bad)';
         msg.textContent = tr('labPart', { p: pass, n: res.length });
       }
     };
+    // Shown when every test passes: a short celebration and the obvious next step.
     const nextBtn = nextLink(m, b);
-    nextBtn.style.display = isDone(b.id) ? '' : 'none';
+    nextBtn.classList.add('big');
+    const cele = h(
+      'div',
+      { class: 'celebrate', role: 'status' },
+      h('div', { class: 'cel-t' }, '\ud83c\udf89 ' + tr('labOk')),
+      nextBtn
+    );
+    cele.hidden = !isDone(b.id);
     const sol = h(
       'details',
       { style: 'margin-top:14px;color:var(--dim)' },
@@ -1229,6 +1283,44 @@
         )
       )
     );
+    sol.hidden = true; // revealed by the last step of the hint ladder
+    // Hint ladder: 1) re-read the first story that fails, 2) what the test says,
+    // 3) the full solution. One step per click, so learners get only as much help as they need.
+    let hintLevel = 0;
+    const hintOut = h('div', { class: 'hintout', 'aria-live': 'polite' });
+    const hintBtn = h(
+      'button',
+      { class: 'btn sm ghost hintbtn', onclick: () => giveHint() },
+      tr('hintBtn')
+    );
+    function giveHint() {
+      if (!lastRes) test(false);
+      const bad = b.tests
+        .map((t, i) => ({ t, i, r: lastRes && lastRes[i] }))
+        .filter((x) => x.r && !x.r.ok);
+      hintOut.innerHTML = '';
+      if (!bad.length) {
+        hintOut.append(h('p', {}, tr('hintAllOk')));
+        hintLevel = 0;
+        return;
+      }
+      hintLevel = Math.min(3, hintLevel + 1);
+      const f = bad[0];
+      hintOut.append(
+        h(
+          'p',
+          {},
+          h('b', {}, tr('hint1') + ' '),
+          h('span', { html: lb.stories ? lb.stories[f.i] : f.t.story })
+        )
+      );
+      if (hintLevel >= 2) hintOut.append(h('p', {}, h('b', {}, tr('hint2') + ' '), f.r.why));
+      if (hintLevel >= 3) {
+        sol.hidden = false;
+        sol.open = true;
+        hintBtn.disabled = true;
+      } else hintBtn.textContent = hintLevel === 1 ? tr('hintMore') : tr('hintSol');
+    }
     renderStories(null);
     const left = h(
       'div',
@@ -1242,30 +1334,34 @@
       h('h2', { style: 'margin-top:0' }, lb.title),
       h('div', { html: lb.desc2 || '' }),
       h('h3', {}, tr('stories')),
+      sum,
       list,
       h(
         'div',
         { class: 'toolbar' },
-        h('button', { class: 'btn', onclick: test }, tr('runTests')),
+        h('button', { class: 'btn', onclick: () => test(true) }, tr('runTests')),
         h(
           'button',
           {
             class: 'btn ghost',
             onclick: () => {
-              if (confirm(tr('resetAsk'))) {
+              QmlUI.confirm(tr('resetAsk'), { ok: tr('reset'), danger: true }).then((yes) => {
+                if (!yes) return;
                 delete prog.files[b.id];
                 saveProg();
                 pg.setFiles(JSON.parse(JSON.stringify(b.files)));
                 renderStories(null);
                 msg.textContent = '';
-              }
+              });
             },
           },
           tr('reset')
         )
       ),
       msg,
-      nextBtn,
+      cele,
+      h('div', { class: 'toolbar' }, hintBtn),
+      hintOut,
       sol
     );
     const right = h(
@@ -1289,7 +1385,45 @@
         )
       )
     );
-    $app.append(h('div', { class: 'lab' }, left, right));
+    // On phones the three areas become tabs (Instructions / Code / Preview) plus an always-visible
+    // Run tests button, because stacking everything makes a very long page.
+    const labEl = h('div', { class: 'lab', 'data-pane': 'guide' }, left, right);
+    const paneNames = [
+      ['guide', tr('tabGuide')],
+      ['code', tr('tabCode')],
+      ['preview', tr(isRust ? 'output' : 'preview')],
+    ];
+    const paneBtns = paneNames.map(([k, text]) =>
+      h(
+        'button',
+        {
+          type: 'button',
+          role: 'tab',
+          class: k === 'guide' ? 'on' : '',
+          'aria-selected': String(k === 'guide'),
+          onclick: () => {
+            labEl.setAttribute('data-pane', k);
+            paneBtns.forEach((x, i) => {
+              const on = paneNames[i][0] === k;
+              x.classList.toggle('on', on);
+              x.setAttribute('aria-selected', String(on));
+            });
+          },
+        },
+        text
+      )
+    );
+    const labTabs = h(
+      'div',
+      { class: 'labtabs', role: 'tablist' },
+      paneBtns,
+      h(
+        'button',
+        { type: 'button', class: 'labrun', onclick: () => test(true) },
+        '\u25b6 ' + tr('runShort')
+      )
+    );
+    $app.append(labTabs, labEl);
     $app.style.maxWidth = '1700px';
   }
 

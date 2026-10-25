@@ -11,6 +11,20 @@
   ];
   const S = {
     en: {
+      syncPromo: 'Sign in to keep your progress on every device.',
+      signInShort: 'Sign in',
+      contTop: 'Continue where you left off',
+      testsPassing: '{p} of {n} tests passing',
+      testsTodo: '{n} tests to pass',
+      hintBtn: 'Need a hint?',
+      hintMore: 'Another hint',
+      hintSol: 'Still stuck? Show the solution',
+      hintAllOk: 'All tests pass right now. Nothing to fix.',
+      hint1: 'Hint 1: re-read this story:',
+      hint2: 'Hint 2: the test says:',
+      tabGuide: 'Instructions',
+      tabCode: 'Code',
+      runShort: 'Run tests',
       tag: 'learn by building, offline',
       overall: '{c}: {d} of {n} blocks complete',
       module: 'Module',
@@ -101,6 +115,9 @@
       wLangOpen: 'Open GENLearn',
     },
     es: {
+      syncPromo: 'Inicia sesión para guardar tu progreso en todos tus dispositivos.',
+      signInShort: 'Iniciar sesión',
+      contTop: 'Continuar donde lo dejaste',
       tag: 'aprende construyendo, sin conexión',
       overall: '{c}: {d} de {n} bloques completados',
       module: 'Módulo',
@@ -191,6 +208,9 @@
       wLangOpen: 'Abrir GENLearn',
     },
     de: {
+      syncPromo: 'Melde dich an, um deinen Fortschritt auf allen Geräten zu behalten.',
+      signInShort: 'Anmelden',
+      contTop: 'Dort weitermachen, wo du aufgehört hast',
       tag: 'durch Bauen lernen, offline',
       overall: '{c}: {d} von {n} Blöcken abgeschlossen',
       module: 'Modul',
@@ -282,6 +302,9 @@
       wLangOpen: 'GENLearn öffnen',
     },
     ja: {
+      syncPromo: 'サインインすると、すべての端末で進捗が引き継がれます。',
+      signInShort: 'サインイン',
+      contTop: '前回の続きから再開',
       tag: '作って学ぶ・オフライン対応',
       overall: '{c}: {n}ブロック中{d}ブロック完了',
       module: 'モジュール',

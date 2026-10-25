@@ -18,11 +18,6 @@
   var editing = false; /* every page load and plan switch starts in reading mode; editing is switched on by hand */
   var view = document.getElementById('view'),
     notice = document.getElementById('notice');
-  var toastEl = document.createElement('div');
-  toastEl.className = 'toast';
-  toastEl.setAttribute('role', 'status');
-  document.body.append(toastEl);
-  var toastT;
 
   function uid() {
     return Math.random().toString(36).slice(2, 9);
@@ -45,13 +40,29 @@
       ? m + ' min'
       : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '');
   }
-  function toast(msg) {
-    toastEl.textContent = msg;
-    toastEl.classList.add('show');
-    clearTimeout(toastT);
-    toastT = setTimeout(function () {
-      toastEl.classList.remove('show');
-    }, 4200);
+  // Short message at the bottom of the screen (shared helper from js/ui.js).
+  function toast(msg, opt) {
+    QmlUI.toast(msg, opt);
+  }
+  // Run a change that can be undone: the old state is kept and an Undo button is offered.
+  // (Used instead of "are you sure?" popups: acting is quick, and a mistake costs one tap.)
+  function undoable(message, change) {
+    var before = JSON.stringify(state);
+    change();
+    save();
+    render();
+    toast(message, {
+      label: 'Undo',
+      onClick: function () {
+        var s = JSON.parse(before);
+        state.plans = s.plans.map(function (p) {
+          return cleanPlan(p, false);
+        });
+        state.current = s.current;
+        save();
+        render();
+      },
+    });
   }
 
   function cleanBlock(b, ok, strict) {
@@ -178,6 +189,41 @@
       })[0] || null
     );
   }
+  // Add a plan made from a template and open it.
+  function addTemplate(t) {
+    var q = fromTemplate(t);
+    state.plans.push(q);
+    state.current = q.id;
+    editing = false;
+    save();
+    render();
+    toast('Template added.');
+  }
+  // The first block that still has work to do: unticked tasks, or logged time below the target.
+  function nextUp(p) {
+    for (var i = 0; i < p.blocks.length; i++) {
+      var b = p.blocks[i];
+      if (
+        (b.type === 'tasks' &&
+          b.tasks.some(function (t) {
+            return !t.done;
+          })) ||
+        (b.type === 'time' && b.target > 0 && b.logged < b.target)
+      )
+        return b.id;
+    }
+    return null;
+  }
+  // Scroll to the "next up" block and flash it.
+  function jumpNext() {
+    var el = refs[nextUp(cur())];
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('flash');
+    setTimeout(function () {
+      el.classList.remove('flash');
+    }, 1800);
+  }
   function uniqueTitle(t) {
     var names = state.plans.map(function (p) {
         return p.title;
@@ -255,6 +301,7 @@
   });
 
   var refs = {};
+  var nextId = null; // id of the block marked "next up" (reading mode only)
   function progress(p) {
     var total = 0,
       done = 0;
@@ -289,6 +336,7 @@
   function render() {
     refs = {};
     view.textContent = '';
+    nextId = null;
     var p = cur(),
       tpls = window.PLANNER_TEMPLATES || [];
     var file = h('input', {
@@ -317,6 +365,9 @@
         'div',
         { class: 'bar' },
         state.plans.length ? sel : null,
+        p && !editing && nextUp(p)
+          ? h('button', { class: 'btn main', type: 'button', onclick: jumpNext }, '\u25b6 Next up')
+          : null,
         h('button', { class: 'btn', type: 'button', onclick: newPlan }, 'New plan'),
         p
           ? h(
@@ -343,13 +394,7 @@
                 return {
                   text: t.name,
                   fn: function () {
-                    var q = fromTemplate(t);
-                    state.plans.push(q);
-                    state.current = q.id;
-                    editing = false;
-                    save();
-                    render();
-                    toast('Template added.');
+                    addTemplate(t);
                   },
                 };
               })
@@ -403,13 +448,36 @@
           h(
             'p',
             null,
-            'Create a blank plan, add blocks (days, weeks, phases) and tick tasks off, or import a plan file.'
+            'A plan is a timeline of blocks (days, weeks, phases) with tasks you tick off. Start from scratch, from a template, or import a plan file.'
+          ),
+          h(
+            'div',
+            { class: 'bar' },
+            h(
+              'button',
+              { class: 'btn main', type: 'button', onclick: newPlan },
+              'Create your first plan'
+            ),
+            tpls.map(function (t) {
+              return h(
+                'button',
+                {
+                  class: 'btn',
+                  type: 'button',
+                  onclick: function () {
+                    addTemplate(t);
+                  },
+                },
+                'Start from: ' + t.name
+              );
+            })
           )
         )
       );
       return;
     }
     view.classList.toggle('reading', !editing);
+    nextId = editing ? null : nextUp(p);
     if (!editing)
       view.append(
         h(
@@ -600,9 +668,9 @@
         'aria-label': label,
         onclick: function (e) {
           e.preventDefault();
-          arr.splice(j, 1);
-          save();
-          render();
+          undoable('Item removed', function () {
+            arr.splice(j, 1);
+          });
         },
       },
       '\u00d7'
@@ -922,7 +990,8 @@
             { class: 'head' },
             h('span', { class: 'kind', title: TYPES[b.type].name }, TYPES[b.type].icon),
             h('h2', { class: 'btitle' }, b.title || TYPES[b.type].name),
-            b.exam ? h('span', { class: 'keydate', title: 'Key date' }, '\u2691 key date') : null
+            b.exam ? h('span', { class: 'keydate', title: 'Key date' }, '\u2691 key date') : null,
+            b.id === nextId ? h('span', { class: 'nextup' }, '\u25b6 next up') : null
           ),
           b.tags.length
             ? h(
@@ -1034,10 +1103,9 @@
           title: 'Delete block',
           'aria-label': 'Delete block',
           onclick: function () {
-            if (hasContent(b) && !confirm('Delete this block and its content?')) return;
-            p.blocks.splice(i, 1);
-            save();
-            render();
+            undoable('Block deleted', function () {
+              p.blocks.splice(i, 1);
+            });
           },
         },
         '\u00d7'
@@ -1085,15 +1153,16 @@
     render();
   }
   function newPlan() {
-    var t = prompt('Plan name', 'New plan');
-    if (t === null) return;
-    var p = cleanPlan({ title: t.trim() || 'New plan' }, false);
-    p.id = uid();
-    state.plans.push(p);
-    state.current = p.id;
-    editing = true;
-    save();
-    render();
+    QmlUI.prompt('Plan name', 'New plan', { ok: 'Create' }).then(function (t) {
+      if (t === null) return;
+      var p = cleanPlan({ title: t.trim() || 'New plan' }, false);
+      p.id = uid();
+      state.plans.push(p);
+      state.current = p.id;
+      editing = true;
+      save();
+      render();
+    });
   }
   function dupPlan() {
     var p = clone(cur(), false);
@@ -1112,13 +1181,13 @@
   }
   function delPlan() {
     var p = cur();
-    if (!p || !confirm('Delete \u201c' + p.title + '\u201d? This cannot be undone.')) return;
-    state.plans = state.plans.filter(function (q) {
-      return q.id !== p.id;
+    if (!p) return;
+    undoable('Plan \u201c' + p.title + '\u201d deleted', function () {
+      state.plans = state.plans.filter(function (q) {
+        return q.id !== p.id;
+      });
+      state.current = state.plans[0] ? state.plans[0].id : null;
     });
-    state.current = state.plans[0] ? state.plans[0].id : null;
-    save();
-    render();
   }
 
   /* ---- export / import ---- */

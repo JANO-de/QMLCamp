@@ -148,7 +148,14 @@
     }
     if (page === 'resources') viewResources();
     else if (page.indexOf('c:') === 0) viewCourse();
-    else viewHome();
+    else {
+      viewHome();
+      // Signed-out visitors get a gentle pointer to sync (hides itself once signed in).
+      if (window.QmlSync && view)
+        view.prepend(
+          window.QmlSync.promo('Sign in to keep your progress on every device.', 'Sign in')
+        );
+    }
     window.scrollTo(0, 0);
   }
   window.addEventListener('hashchange', render);

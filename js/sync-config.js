@@ -7,7 +7,11 @@
 //  Full steps: supabase/README.md
 // =============================================================================
 window.QML_SYNC_CONFIG = {
-  supabaseUrl: 'https://ribghdmmmpzchhvuizqa.supabase.co',
-  supabaseAnonKey: 'sb_publishable_GPw2Draq1AiQ-7KtQNJ7_Q_oD9xg0ZT',
-  emailDomain: '',
+  supabaseUrl: '', // e.g. 'https://abcdefgh.supabase.co'
+  supabaseAnonKey: '', // the long "anon public" key
+  // Leave emailDomain EMPTY (recommended, no domain needed): people sign in with their real
+  // e-mail address and a password. Only set it if you own a domain with an MX record: then
+  // people sign in with a username instead (stored as username@emailDomain; Supabase rejects
+  // example.com and domains without mail records).
+  emailDomain: '', // e.g. 'mydomain.com'
 };

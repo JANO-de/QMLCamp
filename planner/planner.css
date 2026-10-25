@@ -792,3 +792,51 @@ h1.title.ro {
 .reading .card {
   padding-bottom: 12px;
 }
+
+/* ---- UX pass ---- */
+.nextup {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--edge);
+  color: var(--bg);
+  margin-left: 8px;
+  white-space: nowrap;
+}
+.blk.flash .card {
+  animation: flash 1.6s ease-out;
+}
+@keyframes flash {
+  0% {
+    box-shadow: 0 0 0 4px var(--sage);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #4c9ffe;
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .btn,
+  select,
+  summary.btn {
+    min-height: 44px;
+  }
+  .ic {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .blk.flash .card {
+    animation: none;
+  }
+}
