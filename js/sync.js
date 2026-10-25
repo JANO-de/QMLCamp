@@ -4,11 +4,8 @@
 //  flushed when the page is hidden/closed. Other devices pull on open, on focus
 //  and every 60 s.
 //
-//  Two interchangeable "backends" store the data:
-//    supabase  username + password accounts on a Supabase project (needs
-//              js/sync-config.js filled in, see supabase/README.md)
-//    gist      the user's own private GitHub gist, signed in with a token
-//              (classic PAT, scope "gist"); used when Supabase is not configured
+//  Accounts (e-mail + password) and storage live on a Supabase project; fill in
+//  js/sync-config.js (see supabase/README.md). There is no other sign-in method.
 // =============================================================================
 (function () {
   'use strict';
@@ -23,23 +20,23 @@
       'genlearn.courses.v1',
     ];
   var CFG = 'qmlcamp-sync-v1',
-    META = 'qmlcamp-sync-meta-v1',
-    FILE = 'qmlcamp-sync.json',
-    DESC = 'QMLCamp sync data',
-    API = 'https://api.github.com';
+    META = 'qmlcamp-sync-meta-v1';
   var SB = window.QML_SYNC_CONFIG || {},
     SB_URL = String(SB.supabaseUrl || '').replace(/\/+$/, ''),
     SB_KEY = SB.supabaseAnonKey || '',
     SB_MAIL = String(SB.emailDomain || '').trim(),
     // Without emailDomain people sign in with their real e-mail address.
     EMAIL_MODE = !SB_MAIL,
-    mode = SB_URL && SB_KEY ? 'account' : 'token',
+    CONFIGURED = !!(SB_URL && SB_KEY),
     signupMode = false, // account dialog: false = Sign in form, true = Create account form
     view = '', // '' | 'forgot': sub-view of the account dialog
     recovery = null; // set when the page was opened from a password-reset e-mail link
   var setRaw = Storage.prototype.setItem,
     delRaw = Storage.prototype.removeItem;
-  var cfg = readJ(CFG, null),
+  // Sessions from older versions (GitHub token) are ignored: only account sessions are valid.
+  var cfg = (function (c) {
+      return c && c.backend === 'supabase' ? c : null;
+    })(readJ(CFG, null)),
     meta = readJ(META, {}),
     ready = false,
     applying = false,
@@ -147,97 +144,10 @@
     }
   }
 
-  // ---- backend: GitHub gist
-  function gh(path, opt) {
-    opt = opt || {};
-    return fetch(API + path, {
-      method: opt.method || 'GET',
-      body: opt.body,
-      keepalive: !!opt.keepalive,
-      headers: {
-        Authorization: 'Bearer ' + cfg.token,
-        Accept: 'application/vnd.github+json',
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-    }).then(function (r) {
-      if (r.status === 401) {
-        var e = new Error('Token rejected (401). Sign in again.');
-        e.auth = 1;
-        throw e;
-      }
-      if (!r.ok) throw new Error('GitHub error ' + r.status);
-      return r.json();
-    });
-  }
-  function findGist() {
-    if (cfg.gist) return Promise.resolve(cfg.gist);
-    function page(n) {
-      return gh('/gists?per_page=100&page=' + n).then(function (l) {
-        for (var i = 0; i < l.length; i++) if (l[i].files && l[i].files[FILE]) return l[i].id;
-        return l.length === 100 && n < 10 ? page(n + 1) : null;
-      });
-    }
-    return page(1)
-      .then(function (id) {
-        if (id) return id;
-        var f = {};
-        f[FILE] = { content: JSON.stringify({ v: 1, keys: {} }) };
-        return gh('/gists', {
-          method: 'POST',
-          body: JSON.stringify({ description: DESC, public: false, files: f }),
-        }).then(function (g) {
-          return g.id;
-        });
-      })
-      .then(function (id) {
-        cfg.gist = id;
-        writeJ(CFG, cfg);
-        return id;
-      });
-  }
-  function fetchRemote(id) {
-    return gh('/gists/' + id).then(function (g) {
-      var f = g.files && g.files[FILE];
-      if (!f) return { keys: {} };
-      var p = f.truncated
-        ? fetch(f.raw_url, { cache: 'no-store' }).then(function (r) {
-            return r.text();
-          })
-        : Promise.resolve(f.content);
-      return p.then(function (t) {
-        try {
-          var j = JSON.parse(t);
-          return j && isObj(j.keys) ? j : { keys: {} };
-        } catch (e) {
-          return { keys: {} };
-        }
-      });
-    });
-  }
   // What we store remotely: { v, at, keys: { storageKey: { t: time, v: text|null } } }
   function snapshot() {
     return { v: 1, at: new Date().toISOString(), keys: remote.keys };
   }
-  var gistBackend = {
-    canFlush: function () {
-      return !!cfg.gist;
-    },
-    pull: function () {
-      return findGist().then(fetchRemote);
-    },
-    push: function (keepalive) {
-      var files = {};
-      files[FILE] = { content: JSON.stringify(snapshot()) };
-      var body = JSON.stringify({ files: files });
-      return gh('/gists/' + cfg.gist, {
-        method: 'PATCH',
-        body: body,
-        keepalive: keepalive && body.length < 60000,
-      });
-    },
-  };
-
   // ---- backend: Supabase (username + password)
   // Plain REST calls, no SDK. A username is turned into a private e-mail address
   // (username@SB_MAIL) because Supabase Auth identifies users by e-mail. Each user's
@@ -352,7 +262,7 @@
     },
   };
   function be() {
-    return cfg && cfg.backend === 'supabase' ? sbBackend : gistBackend;
+    return sbBackend;
   }
 
   // ---- sync = pull, merge per key, push what is newer locally
@@ -495,28 +405,6 @@
   }, 60000);
 
   // ---- sign in / out
-  // GitHub token sign-in (gist backend).
-  function signIn(token) {
-    token = String(token || '').trim();
-    if (!token) return Promise.reject(new Error('Paste a token.'));
-    var prev = cfg;
-    cfg = { backend: 'gist', token: token };
-    return gh('/user')
-      .then(function (u) {
-        cfg.user = u.login;
-        if (prev && (prev.user !== u.login || prev.backend === 'supabase')) wipeLocal();
-        writeJ(CFG, cfg);
-        ready = false;
-        return sync();
-      })
-      .then(function () {
-        if (status === 'error' || status === 'auth') throw new Error(msg);
-      })
-      .catch(function (e) {
-        if (!cfg || !cfg.user) cfg = prev;
-        throw e;
-      });
-  }
   // Username + password sign-in or sign-up (supabase backend).
   function signInAccount(id, password, create) {
     var u = String(id || '')
@@ -663,8 +551,7 @@
       box.innerHTML =
         '<p>Signed in as <b></b>. Progress, courses and plans save automatically to <span class="qs-w"></span> and open on any device.</p><p class="qs-s"></p><div class="qs-row"><button type="button" data-a="now">Sync now</button><button type="button" data-a="out">Sign out</button><button type="button" data-a="close">Close</button></div>';
       box.querySelector('b').textContent = cfg.user;
-      box.querySelector('.qs-w').textContent =
-        cfg.backend === 'supabase' ? 'your account on the server' : 'your private gist';
+      box.querySelector('.qs-w').textContent = 'your account on the server';
       box.querySelector('.qs-s').textContent =
         {
           ok: 'Up to date.',
@@ -677,10 +564,10 @@
     } else if (recovery) {
       box.innerHTML =
         '<p>Choose a new password for your account.</p><input data-f="newpass" type="password" autocomplete="new-password" placeholder="new password (8+ characters)" aria-label="New password"><p class="qs-s"></p><div class="qs-row"><button type="button" data-a="setpass">Save password</button><button type="button" data-a="close">Close</button></div>';
-    } else if (mode === 'account' && view === 'forgot') {
+    } else if (CONFIGURED && view === 'forgot') {
       box.innerHTML =
         '<p>Enter your e-mail address and we send you a link to choose a new password.</p><input data-f="user" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="e-mail" aria-label="E-mail"><p class="qs-s"></p><div class="qs-row"><button type="button" data-a="sendreset">Send link</button><button type="button" data-a="back">Back</button></div>';
-    } else if (mode === 'account') {
+    } else if (CONFIGURED) {
       var who = EMAIL_MODE ? 'e-mail' : 'username';
       box.innerHTML =
         '<h2 class="qs-h">' +
@@ -710,14 +597,11 @@
         '</p>' +
         (EMAIL_MODE && !signupMode
           ? '<p class="qs-alt"><a href="#" data-a="forgot">Forgot password?</a></p>'
-          : '') +
-        '<p class="qs-alt"><a href="#" data-a="tokenmode">Use a GitHub token instead</a></p>';
-    } else {
-      box.innerHTML =
-        '<p>Create a token (classic, scope <b>gist</b> only), paste it here. Your data lives in a private gist in your GitHub account.</p><p><a target="_blank" rel="noopener" href="https://github.com/settings/tokens/new?scopes=gist&description=QMLCamp%20sync">Create token</a></p><input data-f="token" type="password" autocomplete="off" placeholder="ghp_\u2026" aria-label="GitHub token"><p class="qs-s"></p><div class="qs-row"><button type="button" data-a="in">Sign in</button><button type="button" data-a="close">Close</button></div>' +
-        (SB_URL && SB_KEY
-          ? '<p class="qs-alt"><a href="#" data-a="accountmode">Use e-mail/username and password instead</a></p>'
           : '');
+    } else {
+      // Not configured: say so plainly instead of offering anything else.
+      box.innerHTML =
+        '<h2 class="qs-h">Accounts are not set up yet</h2><p>This site has no account server configured. The site owner needs to fill in <b>js/sync-config.js</b> (steps in supabase/README.md) and publish it. If you are the owner and just did that, hard-refresh this page (Ctrl+Shift+R).</p><div class="qs-row"><button type="button" data-a="close">Close</button></div>';
     }
     refreshForm();
   }
@@ -765,9 +649,7 @@
     dlg.addEventListener('keydown', function (e) {
       // Enter in a field presses the main button (if it is enabled).
       if (e.key === 'Enter' && e.target.matches && e.target.matches('input[data-f]')) {
-        var go = dlg.querySelector(
-          '.qs-main, [data-a="sendreset"], [data-a="setpass"], [data-a="in"]'
-        );
+        var go = dlg.querySelector('.qs-main, [data-a="sendreset"], [data-a="setpass"]');
         if (go && !go.disabled) {
           e.preventDefault();
           go.click();
@@ -819,10 +701,6 @@
               'Password changed. Sign in with the new password.';
           })
           .catch(fail);
-      } else if (a === 'tokenmode' || a === 'accountmode') {
-        e.preventDefault();
-        mode = a === 'tokenmode' ? 'token' : 'account';
-        fillDlg();
       } else if (a === 'close') dlg.close();
       else if (a === 'now') {
         window.__qmlSyncLive = true;
@@ -839,9 +717,6 @@
               fillDlg();
             });
         });
-      } else if (a === 'in') {
-        s.textContent = 'Signing in\u2026';
-        signIn(field('token')).then(done).catch(fail);
       } else if (a === 'login' || a === 'signup') {
         s.textContent = a === 'signup' ? 'Creating account\u2026' : 'Signing in\u2026';
         signInAccount(field('user'), field('pass'), a === 'signup')
@@ -860,7 +735,6 @@
 
   window.QmlSync = {
     sync: sync,
-    signIn: signIn,
     signInAccount: signInAccount,
     signOut: signOut,
     // A small "Sign in to keep your progress on every device" card; hides itself once signed in.

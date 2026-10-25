@@ -1,6 +1,6 @@
 // =============================================================================
 //  Sync settings. Fill these in to enable username + password accounts.
-//  Leave them empty to keep the GitHub-token (gist) sign-in instead.
+//  While they are empty, the sync button shows "Accounts are not set up yet".
 //  Both values come from Supabase: Project settings > API. The anon key is meant
 //  to be public (it only works within the row-level security rules of setup.sql),
 //  so it is safe to commit. NEVER put the "service_role" key here.

@@ -39,14 +39,13 @@ Notes:
 
 ## Users and sync
 
-`js/sync.js` (loaded first on QMLCamp, GENLearn, Planner). GitHub Pages is static, so data goes to the user's own **private gist** (`qmlcamp-sync.json`). Click the sync button in the top tabs, create a classic token with scope `gist` only, paste it. Progress, lab files, custom courses, plans and home settings then save automatically (1.5 s after each change, and on close/hide) and load on any device with the same sign-in.
+`js/sync.js` (loaded first on QMLCamp, GENLearn, Planner). Accounts are **e-mail + password** on a free Supabase project; there is no other sign-in method. Setup: fill `js/sync-config.js` and run `supabase/setup.sql` (steps and limits in `supabase/README.md`). Progress, lab files, custom courses, plans and home settings then save automatically (1.5 s after each change, and on close/hide) and load on any device after signing in.
 
 - Synced keys: `qmlcamp.v1`, `qmlcamp.courses.v1`, `qmlcamp-planner-v1`, `qmlcamp-home-v1`, `genlearn.v1`, `genlearn.courses.v1`.
 - First sign-in on a device unions local and remote data; later it is last-write-wins per key.
-- Open pages re-check on focus and every 60 s and show a Reload banner if another device changed data.
-- Sign out removes the local copy; the gist keeps it. The token is stored in this browser only.
-
-**Username + password accounts (optional):** fill `js/sync-config.js` with a Supabase project (free) and run `supabase/setup.sql`; the sync button then offers *Sign in / Create account* with e-mail + password (no domain needed). Steps and limits: `supabase/README.md`. Without those values the GitHub-token sign-in above is used.
+- Open pages re-check on focus and every 60 s and offer a Reload if another device changed data.
+- Sign out removes the local copy on that device; the account keeps the data.
+- Until `js/sync-config.js` is filled in and published, the sync button explains that accounts are not set up.
 
 ## UX notes
 

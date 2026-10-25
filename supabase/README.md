@@ -24,7 +24,7 @@ No domain is needed: people sign in with their own e-mail address and a password
 - First sign-in on a device merges local and remote data; afterwards the newest save wins per item.
 - Sign out removes the local copy on that device; the data stays on the server.
 - **Forgot password?** in the dialog e-mails a reset link; it opens the site and asks for a new password.
-- Without the config values the app falls back to the GitHub-token (gist) sign-in.
+- Until the config values are published, the sync button says accounts are not set up (there is no other sign-in).
 
 ## E-mail limits (read this)
 
