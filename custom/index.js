@@ -17,5 +17,6 @@
 //   { engine: 'qmlcamp', id: 'x-mycourse', file: 'custom/x-mycourse.js' }
 window.CUSTOM_COURSES = [
   { engine: 'qmlcamp', id: 'x-demo', file: 'custom/x-demo.js' },
-  { engine: 'genlearn', id: 'x-demo-lang', file: 'custom/x-demo-lang.js' }
+  { engine: 'genlearn', id: 'x-demo-lang', file: 'custom/x-demo-lang.js' },
+  { engine: 'qmlcamp', id: 'x-qml-drills', file: 'custom/x-qml-drills.js' }
 ];
