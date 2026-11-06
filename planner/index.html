@@ -27,6 +27,36 @@
     <script src="modules/list.js"></script>
     <script src="modules/time.js"></script>
     <script src="modules/milestone.js"></script>
+    <script src="modules/heading.js"></script>
+    <script src="modules/markdown-note.js"></script>
+    <script src="modules/date-countdown.js"></script>
+    <script src="modules/progress.js"></script>
+    <script src="modules/table.js"></script>
+    <script src="modules/code.js"></script>
+    <script src="modules/quote.js"></script>
+    <script src="modules/image.js"></script>
+    <script src="modules/rating.js"></script>
+    <script src="modules/habit-row.js"></script>
+    <script src="modules/card-link.js"></script>
+    <script src="modules/divider.js"></script>
+    <script src="modules/file-ref.js"></script>
+    <script src="modules/sticky-note.js"></script>
+    <script src="modules/todo.js"></script>
+    <script src="modules/kanban.js"></script>
+    <script src="modules/calendar.js"></script>
+    <script src="modules/drawing.js"></script>
+    <script src="modules/index.js"></script>
+    <script>
+      (function(){
+        var files = window.PLANNER_MODULE_FILES || [];
+        files.forEach(function(f){
+          if(!f) return;
+          var s = document.createElement('script');
+          s.src = f;
+          document.body.appendChild(s);
+        });
+      })();
+    </script>
     <script src="core/model.js"></script>
     <script src="core/migrate.js"></script>
     <script src="core/store.js"></script>
