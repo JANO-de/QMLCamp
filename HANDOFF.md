@@ -219,6 +219,7 @@ Implementation order inside the catalogue: `sticky-note`, `todo`, `kanban`, `cal
 | Date | Phase | Notes |
 |---|---|---|
 | 2026-11-06 | Handoff written | Repo analysed, no code changed, nothing executed |
+| 2026-11-06 | P1 | Canvas + categories. `planner/core/history.js`, `planner/ui-{kit,card,list}.js`, `planner/canvas.js`; `planner/planner.js` is the app controller (categories, canvas/list modes, undo, import/export, `#cat=&card=` routing); builtin modules gained `render()`/`reset()`; `PlannerModel.reid/newCard/newCategory`; `PlannerStore.load({persist:true})` at boot writes v2 and leaves v1 byte-identical; cover cards + list view; selftest 36 assertions. |
 | 2026-11-06 | P2 | Connections (card-level). `planner/core/model.js` keeps `card.icon` (8 chars); `planner/ui-card.js` icon picker + 4 side ports in edit mode; `planner/canvas.js` rewritten: bounded `board`, SVG link layer sized to the board (so lines are real hit targets), ports, drag-to-connect, curve/straight/step, end/both/no arrow, labels, edge selection; `planner/planner.js` `addEdge/updateEdge/deleteEdge`, edge toolbar, "Link to…" menu; `planner/planner.css` P2 styles; selftest 37 assertions. Node: `node run-selftest.js` 37/0; Chromium CDP smoke test passes (drag link, move/resize keeps it, edge click+Delete+Undo, icon, reload persistence, no exceptions). |
 
 ### P2 notes for the next session
