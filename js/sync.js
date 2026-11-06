@@ -15,6 +15,7 @@
       'qmlcamp.v1',
       'qmlcamp.courses.v1',
       'qmlcamp-planner-v1',
+      'qmlcamp-planner-v2',
       'qmlcamp-home-v1',
       'genlearn.v1',
       'genlearn.courses.v1',

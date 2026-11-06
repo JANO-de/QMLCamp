@@ -224,8 +224,7 @@
   window.addEventListener('hashchange', route);
 
   // ------------------------------------------------------------------ home (dashboard widgets)
-  const PLAN_KEY = 'qmlcamp-planner-v1',
-    HOME_KEY = 'qmlcamp-home-v1';
+  const HOME_KEY = 'qmlcamp-home-v1';
   const readJson = (k, d) => {
     try {
       const v = JSON.parse(localStorage.getItem(k));
@@ -234,30 +233,27 @@
       return d;
     }
   };
-  const readPlans = () => {
-    const s = readJson(PLAN_KEY, null);
-    return s && Array.isArray(s.plans)
-      ? s.plans.filter((p) => p && typeof p === 'object' && Array.isArray(p.blocks))
-      : [];
-  };
-  const blockDone = (b) =>
-    b.type === 'tasks'
-      ? (b.tasks || []).length > 0 && b.tasks.every((t) => t.done)
-      : b.type === 'time'
-        ? b.target > 0 && b.logged >= b.target
-        : false;
+  // Plans come from the Planner store (v2 key; v1 data is migrated in memory, nothing is written here).
+  // Each plan: { id, title, tags, blocks: [{ type, data, ... }], catId, catName }.
+  const readPlans = () => (window.PlannerStore ? PlannerStore.homePlans() : { plans: [], categories: 0 });
+  const blockDone = (b) => PlannerModules.isDone(b.type, b.data);
   const planStats = (p) => {
     let n = 0,
       d = 0;
     p.blocks.forEach((b) => {
-      if (b.type === 'tasks')
-        (b.tasks || []).forEach((t) => {
-          n++;
-          if (t.done) d++;
-        });
+      const s = PlannerModules.stats(b.type, b.data);
+      n += s.total;
+      d += s.done;
     });
     return { n, d, pct: n ? Math.round((100 * d) / n) : 0 };
   };
+  const planHref = (p) =>
+    'planner/index.html#cat=' +
+    encodeURIComponent(p.catId) +
+    '&card=' +
+    encodeURIComponent(p.id) +
+    '&plan=' +
+    encodeURIComponent(p.id); // plan= keeps older Planner builds working
   const widget = (cls, title, ...kids) =>
     h(
       'section',
@@ -330,7 +326,7 @@
   }
   function planWidget() {
     const box = widget('w-plan w-wide', tr('wPlan')),
-      plans = readPlans();
+      { plans, categories } = readPlans();
     if (!plans.length) {
       box.append(
         h('p', { class: 'dim' }, tr('wPlanNone')),
@@ -342,7 +338,7 @@
       draw = (id) => {
         const p = plans.find((x) => x.id === id) || plans[0],
           st = planStats(p),
-          open = p.blocks.find((b) => b.type === 'tasks' && (b.tasks || []).some((t) => !t.done));
+          open = p.blocks.find((b) => b.type === 'tasks' && b.data.tasks.some((t) => !t.done));
         const dates = p.blocks
             .filter((b) => (b.exam || b.type === 'milestone') && !blockDone(b))
             .slice(0, 4),
@@ -356,7 +352,8 @@
             h(
               'h3',
               {},
-              h('a', { href: 'planner/index.html#plan=' + encodeURIComponent(p.id) }, p.title || '')
+              h('a', { href: planHref(p) }, p.title || ''),
+              categories > 1 ? h('span', { class: 'sub', style: 'margin-left:8px' }, p.catName) : null
             ),
             h(
               'div',
@@ -378,7 +375,7 @@
                   h(
                     'ul',
                     { class: 'wlist' },
-                    open.tasks
+                    open.data.tasks
                       .filter((t) => !t.done)
                       .slice(0, 3)
                       .map((t) => h('li', {}, t.text))
@@ -394,7 +391,7 @@
                     'ul',
                     { class: 'wlist flags' },
                     dates.map((b) =>
-                      h('li', {}, (b.label ? b.label + ': ' : '') + (b.title || b.text || ''))
+                      h('li', {}, (b.label ? b.label + ': ' : '') + (b.title || (b.data && b.data.text) || ''))
                     )
                   )
                 )
@@ -422,7 +419,7 @@
           ),
           h(
             'a',
-            { class: 'btn sm', href: 'planner/index.html#plan=' + encodeURIComponent(p.id) },
+            { class: 'btn sm', href: planHref(p) },
             tr('wPlanOpen')
           )
         );
@@ -431,7 +428,7 @@
     const sel = h(
       'select',
       { class: 'lang', 'aria-label': tr('wPlanPick') },
-      plans.map((p) => h('option', { value: p.id }, p.title || ''))
+      plans.map((p) => h('option', { value: p.id }, (p.title || '') + (categories > 1 ? ' \u00b7 ' + p.catName : '')))
     );
     const first = plans.find((p) => p.id === saved.planId) || plans[0];
     sel.value = first.id;
