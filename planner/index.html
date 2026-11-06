@@ -1,14 +1,11 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="es">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Planner</title>
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap"
-    />
-    <link rel="stylesheet" href="planner.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+    <link rel="stylesheet" href="planner.css">
   </head>
   <body>
     <nav class="tabs" aria-label="Sites">
@@ -16,14 +13,29 @@
       <a href="../genlearn/index.html">GENLearn</a>
       <a href="index.html" class="on" aria-current="page">Planner</a>
     </nav>
-    <div class="app">
-      <div id="notice" class="notice" role="status" hidden></div>
-      <main id="view"></main>
-    </div>
+    <div id="notice" class="notice" role="status" hidden></div>
+    <div id="cats" class="cats"></div>
+    <div id="toolbar" class="bar tool" role="toolbar" aria-label="Planner tools"></div>
+    <main id="view" class="stage"></main>
     <script src="../js/ui.js"></script>
     <script src="../js/sync-config.js"></script>
     <script src="../js/sync.js"></script>
+    <script src="core/registry.js"></script>
+    <script src="modules/tasks.js"></script>
+    <script src="modules/note.js"></script>
+    <script src="modules/links.js"></script>
+    <script src="modules/list.js"></script>
+    <script src="modules/time.js"></script>
+    <script src="modules/milestone.js"></script>
+    <script src="core/model.js"></script>
+    <script src="core/migrate.js"></script>
+    <script src="core/store.js"></script>
+    <script src="core/history.js"></script>
     <script src="templates.js"></script>
+    <script src="ui-kit.js"></script>
+    <script src="ui-card.js"></script>
+    <script src="ui-list.js"></script>
+    <script src="canvas.js"></script>
     <script src="planner.js"></script>
   </body>
 </html>

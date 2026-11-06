@@ -29,7 +29,11 @@ Notes:
 
 - Templates menu / first run: `planner/templates.js` (`window.PLANNER_TEMPLATES`). Entries with `seed: true` are added the first time the Planner opens.
 - Export: this plan or all plans as `.json`, or one plan as Markdown. Import: `.json` (single plan, `{plans:[...]}` or an array); imported plans are sanitised and never overwrite existing ones.
-- Stored in the browser (`localStorage`, key `qmlcamp-planner-v1`). No build step, works from `file://`. QMLCamp and Planner use the Bricolage Grotesque font from Google Fonts when online and fall back to system fonts offline.
+- Stored in the browser (`localStorage`, key `qmlcamp-planner-v1`; the canvas rewrite uses `qmlcamp-planner-v2`, built from v1 without ever deleting it). No build step, works from `file://`. QMLCamp and Planner use the Bricolage Grotesque font from Google Fonts when online and fall back to system fonts offline.
+
+## Planner core (canvas rewrite, in progress)
+
+`planner/core/` (registry, model, migrate, store) and `planner/modules/` (one file per block type) hold the v2 data model: categories → cards → blocks, plus connections (edges). Open `planner/selftest.html` to run the assertions (title shows PASS/FAIL). To add a block type, copy `planner/modules/_template-module.js`. See `HANDOFF.md` for the plan and phase status.
 
 ## Planner modes and home widgets
 
@@ -41,7 +45,7 @@ Notes:
 
 `js/sync.js` (loaded first on QMLCamp, GENLearn, Planner). Accounts are **e-mail + password** on a free Supabase project; there is no other sign-in method. Setup: fill `js/sync-config.js` and run `supabase/setup.sql` (steps and limits in `supabase/README.md`). Progress, lab files, custom courses, plans and home settings then save automatically (1.5 s after each change, and on close/hide) and load on any device after signing in.
 
-- Synced keys: `qmlcamp.v1`, `qmlcamp.courses.v1`, `qmlcamp-planner-v1`, `qmlcamp-home-v1`, `genlearn.v1`, `genlearn.courses.v1`.
+- Synced keys: `qmlcamp.v1`, `qmlcamp.courses.v1`, `qmlcamp-planner-v1`, `qmlcamp-planner-v2`, `qmlcamp-home-v1`, `genlearn.v1`, `genlearn.courses.v1`.
 - First sign-in on a device unions local and remote data; later it is last-write-wins per key.
 - Open pages re-check on focus and every 60 s and offer a Reload if another device changed data.
 - Sign out removes the local copy on that device; the account keeps the data.
@@ -55,3 +59,9 @@ Notes:
 - Planner: "Next up" marker and button, richer empty state, Undo for deletes.
 - Course creator warns before you leave with unsaved changes.
 - Hint/tab/test-progress texts exist in English only; other languages fall back to English.
+
+## Planner canvas (P1 + P2)
+
+The Planner opens as a canvas: tabs under the site tabs are categories, plans are cards you can place, resize and collapse freely. Reading mode is the default; press Edit to change layout and content. "List view" shows one plan as the classic timeline. Data lives in `qmlcamp-planner-v2` (old `qmlcamp-planner-v1` is kept untouched as backup). Self-test: `node run-selftest.js` or open `planner/selftest.html`.
+
+Cards also carry an icon (pick one in Edit mode). To link two cards, press Edit and drag from a card's side port onto another card; links are card-level. In Edit mode, click a link to change its style (curve/straight/step), arrows (end/both/none), colour and label, or to delete it (also Delete/Backspace). "Link to…" in the toolbar connects the selected card without dragging. Moving or resizing a card keeps its links attached; deleting a card removes its links. Undo/Redo covers every link change.

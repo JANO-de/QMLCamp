@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Planner self-test</title>
+    <style>
+      body { font: 15px/1.5 system-ui, sans-serif; margin: 24px auto; max-width: 820px; padding: 0 16px; background: #faf7f2; color: #2b2b33; }
+      @media (prefers-color-scheme: dark) { body { background: #1e1e24; color: #e8e6ee; } }
+      h1 { font-size: 20px; }
+      li { margin: 4px 0; list-style: none; }
+      .ok::before { content: '\2713 '; color: #5a9a6e; }
+      .bad::before { content: '\2717 '; color: #c0525e; }
+      pre { white-space: pre-wrap; margin: 2px 0 8px 18px; color: #c0525e; font-size: 13px; }
+      #sum { font-weight: 700; }
+    </style>
+  </head>
+  <body>
+    <h1>Planner self-test</h1>
+    <p id="sum">Running…</p>
+    <ul id="out"></ul>
+    <script src="core/registry.js"></script>
+    <script src="modules/tasks.js"></script>
+    <script src="modules/note.js"></script>
+    <script src="modules/links.js"></script>
+    <script src="modules/list.js"></script>
+    <script src="modules/time.js"></script>
+    <script src="modules/milestone.js"></script>
+    <script src="core/model.js"></script>
+    <script src="core/migrate.js"></script>
+    <script src="core/store.js"></script>
+    <script src="core/history.js"></script>
+    <script src="templates.js"></script>
+    <script src="selftest.js"></script>
+    <script>
+      (function () {
+        var out = document.getElementById('out'), pass = 0, fail = 0;
+        PlannerSelfTest(function (name, ok, detail) {
+          ok ? pass++ : fail++;
+          var li = document.createElement('li');
+          li.className = ok ? 'ok' : 'bad';
+          li.textContent = name;
+          if (!ok) {
+            var pre = document.createElement('pre');
+            pre.textContent = detail;
+            li.appendChild(pre);
+          }
+          out.appendChild(li);
+        });
+        document.getElementById('sum').textContent = pass + ' passed, ' + fail + ' failed';
+        document.title = (fail ? 'FAIL ' : 'PASS ') + document.title;
+        window.__selftest = { pass: pass, fail: fail };
+      })();
+    </script>
+  </body>
+</html>
